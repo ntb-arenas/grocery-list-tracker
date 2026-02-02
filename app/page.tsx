@@ -21,13 +21,25 @@ export default function Home() {
   const [loading, setLoading] = useState(true);
   const [storageMode, setStorageMode] = useState<'firebase' | 'local'>('local');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
-  const [isPWA, setIsPWA] = useState(false);
+  const [shouldShowApp, setShouldShowApp] = useState(false);
 
-  // Check if running as PWA
+  // Check if app should be shown (PWA or bypassed install)
   useEffect(() => {
-    const standalone = window.matchMedia('(display-mode: standalone)').matches;
-    const isInStandaloneMode = (window.navigator as any).standalone || standalone;
-    setIsPWA(isInStandaloneMode);
+    const checkShouldShow = () => {
+      const standalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isInStandaloneMode = (window.navigator as any).standalone || standalone;
+      const hasBypassed = localStorage.getItem('bypass-install') === 'true';
+      setShouldShowApp(isInStandaloneMode || hasBypassed);
+    };
+
+    checkShouldShow();
+
+    // Listen for bypass-install event
+    window.addEventListener('bypass-install', checkShouldShow);
+
+    return () => {
+      window.removeEventListener('bypass-install', checkShouldShow);
+    };
   }, []);
 
   // Load from localStorage on mount
@@ -88,7 +100,7 @@ export default function Home() {
   }, [items, storageMode, loading]);
 
   // Utility: get item by id
-  const getItemById = (id: string) => items.find(item => item.id === id);
+  const getItemById = (id: string) => items.find((item) => item.id === id);
 
   // Add item
   const addItem = async (e: React.FormEvent) => {
@@ -122,7 +134,7 @@ export default function Home() {
 
   // Selection logic
   const toggleSelection = (id: string) => {
-    setSelectedItems(prev => {
+    setSelectedItems((prev) => {
       const newSelection = new Set(prev);
       newSelection.has(id) ? newSelection.delete(id) : newSelection.add(id);
       return newSelection;
@@ -130,7 +142,7 @@ export default function Home() {
   };
 
   const toggleSelectAll = () => {
-    setSelectedItems(selectedItems.size === items.length ? new Set() : new Set(items.map(item => item.id)));
+    setSelectedItems(selectedItems.size === items.length ? new Set() : new Set(items.map((item) => item.id)));
   };
 
   // Bulk actions
@@ -183,7 +195,7 @@ export default function Home() {
     <>
       <ServiceWorkerRegistration />
       <InstallPrompt />
-      {isPWA && (
+      {shouldShowApp && (
         <div className='min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
           <div className='container mx-auto px-4 py-8 max-w-2xl'>
             {/* Header */}
@@ -229,7 +241,7 @@ export default function Home() {
                       {selectedItems.size === items.length ? 'Deselect all' : `${selectedItems.size} selected`}
                     </button>
                     <div className='flex-1'></div>
-                    {Array.from(selectedItems).some(id => !items.find(item => item.id === id)?.completed) && (
+                    {Array.from(selectedItems).some((id) => !items.find((item) => item.id === id)?.completed) && (
                       <button
                         onClick={markSelectedAsBought}
                         className='px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm'
@@ -237,7 +249,7 @@ export default function Home() {
                         ✓ Bought
                       </button>
                     )}
-                    {Array.from(selectedItems).some(id => items.find(item => item.id === id)?.completed) && (
+                    {Array.from(selectedItems).some((id) => items.find((item) => item.id === id)?.completed) && (
                       <button
                         onClick={markSelectedAsUnbought}
                         className='px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm'

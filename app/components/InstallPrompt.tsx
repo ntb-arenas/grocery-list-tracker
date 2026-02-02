@@ -9,11 +9,12 @@ export default function InstallPrompt() {
   const [isAndroid, setIsAndroid] = useState(false);
 
   useEffect(() => {
-    // Check if running as PWA
+    // Check if running as PWA or if user has bypassed install
     const standalone = window.matchMedia('(display-mode: standalone)').matches;
     const isInStandaloneMode = (window.navigator as any).standalone || standalone;
+    const hasBypassed = localStorage.getItem('bypass-install') === 'true';
 
-    setIsStandalone(isInStandaloneMode);
+    setIsStandalone(isInStandaloneMode || hasBypassed);
 
     // Detect iOS
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
@@ -44,6 +45,13 @@ export default function InstallPrompt() {
         setDeferredPrompt(null);
       }
     }
+  };
+
+  const handleBypassInstall = () => {
+    localStorage.setItem('bypass-install', 'true');
+    setIsStandalone(true);
+    // Dispatch custom event to notify parent component
+    window.dispatchEvent(new Event('bypass-install'));
   };
 
   if (isStandalone) {
@@ -87,9 +95,7 @@ export default function InstallPrompt() {
                   <p className='text-slate-900 dark:text-white font-medium mb-2'>
                     Tap the <strong className='text-indigo-600 dark:text-indigo-400'>Share</strong> button
                   </p>
-                  <p className='text-sm text-slate-600 dark:text-slate-400'>
-                    Look for the square with an arrow pointing up ⬆️
-                  </p>
+                  <p className='text-sm text-slate-600 dark:text-slate-400'>Look for the square with an arrow pointing up ⬆️</p>
                 </div>
               </div>
 
@@ -206,9 +212,15 @@ export default function InstallPrompt() {
 
         {/* Help Footer */}
         <div className='mt-6 text-center'>
-          <p className='text-sm text-indigo-100 dark:text-indigo-200'>
+          <p className='text-sm text-indigo-100 dark:text-indigo-200 mb-3'>
             Need help? Ask a family member or check your phone&apos;s manual
           </p>
+          <button
+            onClick={handleBypassInstall}
+            className='text-xs text-indigo-200 dark:text-indigo-300 hover:text-white underline opacity-60 hover:opacity-100 transition-opacity'
+          >
+            Continue in Browser
+          </button>
         </div>
       </div>
     </div>
