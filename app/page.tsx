@@ -13,13 +13,10 @@ interface GroceryItem {
   createdAt: any;
 }
 
-const STORAGE_KEY = 'grocery-items';
-
 export default function Home() {
   const [items, setItems] = useState<GroceryItem[]>([]);
   const [newItem, setNewItem] = useState('');
   const [loading, setLoading] = useState(true);
-  const [storageMode, setStorageMode] = useState<'firebase' | 'local'>('local');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [shouldShowApp, setShouldShowApp] = useState(false);
 
@@ -42,30 +39,8 @@ export default function Home() {
     };
   }, []);
 
-  // Load from localStorage on mount
+  // Load items from Firebase
   useEffect(() => {
-    const USE_FIREBASE = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
-
-    console.log('🔥 Firebase check:', {
-      USE_FIREBASE,
-      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'SET' : 'NOT SET',
-      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
-    });
-
-    if (!USE_FIREBASE) {
-      console.log('📦 Using localStorage mode');
-      const stored = localStorage.getItem(STORAGE_KEY);
-      if (stored) {
-        setItems(JSON.parse(stored));
-      }
-      setLoading(false);
-      setStorageMode('local');
-      return;
-    }
-
-    // Try Firebase first
-    console.log('☁️ Attempting Firebase connection...');
-    setStorageMode('firebase');
     const q = query(collection(db, 'groceryItems'), orderBy('createdAt', 'desc'));
 
     const unsubscribe = onSnapshot(
@@ -79,12 +54,7 @@ export default function Home() {
         setLoading(false);
       },
       (error) => {
-        console.error('Firebase error, falling back to localStorage:', error);
-        setStorageMode('local');
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored) {
-          setItems(JSON.parse(stored));
-        }
+        console.error('Firebase error:', error);
         setLoading(false);
       },
     );
@@ -92,32 +62,10 @@ export default function Home() {
     return () => unsubscribe();
   }, []);
 
-  // Save to localStorage whenever items change (for local mode)
-  useEffect(() => {
-    if (storageMode === 'local' && !loading) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
-    }
-  }, [items, storageMode, loading]);
-
-  // Utility: get item by id
-  const getItemById = (id: string) => items.find((item) => item.id === id);
-
   // Add item
   const addItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItem.trim()) return;
-
-    if (storageMode === 'local') {
-      const newItemObj: GroceryItem = {
-        id: Date.now().toString(),
-        name: newItem,
-        completed: false,
-        createdAt: Date.now(),
-      };
-      setItems([newItemObj, ...items]);
-      setNewItem('');
-      return;
-    }
 
     try {
       await addDoc(collection(db, 'groceryItems'), {
@@ -148,11 +96,6 @@ export default function Home() {
   // Bulk actions
   const markSelectedAsBought = async () => {
     if (selectedItems.size === 0) return;
-    if (storageMode === 'local') {
-      setItems(items.map((item) => (selectedItems.has(item.id) ? { ...item, completed: true } : item)));
-      setSelectedItems(new Set());
-      return;
-    }
     try {
       await Promise.all(Array.from(selectedItems).map((id) => updateDoc(doc(db, 'groceryItems', id), { completed: true })));
       setSelectedItems(new Set());
@@ -163,11 +106,6 @@ export default function Home() {
 
   const markSelectedAsUnbought = async () => {
     if (selectedItems.size === 0) return;
-    if (storageMode === 'local') {
-      setItems(items.map((item) => (selectedItems.has(item.id) ? { ...item, completed: false } : item)));
-      setSelectedItems(new Set());
-      return;
-    }
     try {
       await Promise.all(Array.from(selectedItems).map((id) => updateDoc(doc(db, 'groceryItems', id), { completed: false })));
       setSelectedItems(new Set());
@@ -178,11 +116,6 @@ export default function Home() {
 
   const deleteSelectedItems = async () => {
     if (selectedItems.size === 0) return;
-    if (storageMode === 'local') {
-      setItems(items.filter((item) => !selectedItems.has(item.id)));
-      setSelectedItems(new Set());
-      return;
-    }
     try {
       await Promise.all(Array.from(selectedItems).map((id) => deleteDoc(doc(db, 'groceryItems', id))));
       setSelectedItems(new Set());
@@ -201,9 +134,7 @@ export default function Home() {
             {/* Header */}
             <div className='mb-6'>
               <h1 className='text-4xl font-semibold tracking-tight text-slate-800 dark:text-slate-100 mb-1'>Groceries</h1>
-              <p className='text-sm text-slate-500 dark:text-slate-400'>
-                {storageMode === 'firebase' ? '☁️ Synced' : '📱 Local'}
-              </p>
+              <p className='text-sm text-slate-500 dark:text-slate-400'>☁️ Synced</p>
             </div>
 
             {/* Add Item */}
