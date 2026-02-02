@@ -172,6 +172,24 @@ export default function Home() {
     }
   };
 
+  const markSelectedAsUnbought = async () => {
+    if (selectedItems.size === 0) return;
+
+    if (storageMode === 'local') {
+      setItems(items.map((item) => (selectedItems.has(item.id) ? { ...item, completed: false } : item)));
+      setSelectedItems(new Set());
+      return;
+    }
+
+    try {
+      const promises = Array.from(selectedItems).map((id) => updateDoc(doc(db, 'groceryItems', id), { completed: false }));
+      await Promise.all(promises);
+      setSelectedItems(new Set());
+    } catch (error) {
+      console.error('Error marking items as unbought:', error);
+    }
+  };
+
   const deleteSelectedItems = async () => {
     if (selectedItems.size === 0) return;
 
@@ -248,17 +266,27 @@ export default function Home() {
                       {selectedItems.size === items.length ? 'Deselect all' : `${selectedItems.size} selected`}
                     </button>
                     <div className='flex-1'></div>
-                    <button
-                      onClick={markSelectedAsBought}
-                      className='px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm'
-                    >
-                      ✓ Bought
-                    </button>
+                    {Array.from(selectedItems).some(id => !items.find(item => item.id === id)?.completed) && (
+                      <button
+                        onClick={markSelectedAsBought}
+                        className='px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm'
+                      >
+                        ✓ Bought
+                      </button>
+                    )}
+                    {Array.from(selectedItems).some(id => items.find(item => item.id === id)?.completed) && (
+                      <button
+                        onClick={markSelectedAsUnbought}
+                        className='px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm'
+                      >
+                        ↩ Unbought
+                      </button>
+                    )}
                     <button
                       onClick={deleteSelectedItems}
                       className='px-4 py-2 bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm'
                     >
-                      Delete
+                      🗑 Delete
                     </button>
                   </div>
                 )}
