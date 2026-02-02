@@ -52,7 +52,6 @@ export default function InstallPrompt() {
     setIsStandalone(true);
     // Dispatch custom event to notify parent component
     window.dispatchEvent(new Event("bypass-install"));
-    console.log("User chose to bypass install prompt");
   };
 
   if (isStandalone) {
