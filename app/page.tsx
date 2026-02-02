@@ -1,10 +1,20 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { db } from '@/lib/firebase';
-import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
-import InstallPrompt from './components/InstallPrompt';
-import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
+import { useState, useEffect } from "react";
+import { db } from "@/lib/firebase";
+import {
+  collection,
+  addDoc,
+  onSnapshot,
+  query,
+  orderBy,
+  serverTimestamp,
+  doc,
+  updateDoc,
+  deleteDoc,
+} from "firebase/firestore";
+import InstallPrompt from "./components/InstallPrompt";
+import ServiceWorkerRegistration from "./components/ServiceWorkerRegistration";
 
 interface GroceryItem {
   id: string;
@@ -15,7 +25,7 @@ interface GroceryItem {
 
 export default function Home() {
   const [items, setItems] = useState<GroceryItem[]>([]);
-  const [newItem, setNewItem] = useState('');
+  const [newItem, setNewItem] = useState("");
   const [loading, setLoading] = useState(true);
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [shouldShowApp, setShouldShowApp] = useState(false);
@@ -23,25 +33,25 @@ export default function Home() {
   // Check if app should be shown (PWA or bypassed install)
   useEffect(() => {
     const checkShouldShow = () => {
-      const standalone = window.matchMedia('(display-mode: standalone)').matches;
+      const standalone = window.matchMedia("(display-mode: standalone)").matches;
       const isInStandaloneMode = (window.navigator as any).standalone || standalone;
-      const hasBypassed = localStorage.getItem('bypass-install') === 'true';
+      const hasBypassed = localStorage.getItem("bypass-install") === "true";
       setShouldShowApp(isInStandaloneMode || hasBypassed);
     };
 
     checkShouldShow();
 
     // Listen for bypass-install event
-    window.addEventListener('bypass-install', checkShouldShow);
+    window.addEventListener("bypass-install", checkShouldShow);
 
     return () => {
-      window.removeEventListener('bypass-install', checkShouldShow);
+      window.removeEventListener("bypass-install", checkShouldShow);
     };
   }, []);
 
   // Load items from Firebase
   useEffect(() => {
-    const q = query(collection(db, 'groceryItems'), orderBy('createdAt', 'desc'));
+    const q = query(collection(db, "groceryItems"), orderBy("createdAt", "desc"));
 
     const unsubscribe = onSnapshot(
       q,
@@ -54,7 +64,7 @@ export default function Home() {
         setLoading(false);
       },
       (error) => {
-        console.error('Firebase error:', error);
+        console.error("Firebase error:", error);
         setLoading(false);
       },
     );
@@ -68,15 +78,15 @@ export default function Home() {
     if (!newItem.trim()) return;
 
     try {
-      await addDoc(collection(db, 'groceryItems'), {
+      await addDoc(collection(db, "groceryItems"), {
         name: newItem,
         completed: false,
         createdAt: serverTimestamp(),
       });
-      setNewItem('');
+      setNewItem("");
     } catch (error) {
-      console.error('Error adding item:', error);
-      alert('Error adding item. Please check your Firebase configuration.');
+      console.error("Error adding item:", error);
+      alert("Error adding item. Please check your Firebase configuration.");
     }
   };
 
@@ -97,30 +107,34 @@ export default function Home() {
   const markSelectedAsBought = async () => {
     if (selectedItems.size === 0) return;
     try {
-      await Promise.all(Array.from(selectedItems).map((id) => updateDoc(doc(db, 'groceryItems', id), { completed: true })));
+      await Promise.all(
+        Array.from(selectedItems).map((id) => updateDoc(doc(db, "groceryItems", id), { completed: true })),
+      );
       setSelectedItems(new Set());
     } catch (error) {
-      console.error('Error marking items as bought:', error);
+      console.error("Error marking items as bought:", error);
     }
   };
 
   const markSelectedAsUnbought = async () => {
     if (selectedItems.size === 0) return;
     try {
-      await Promise.all(Array.from(selectedItems).map((id) => updateDoc(doc(db, 'groceryItems', id), { completed: false })));
+      await Promise.all(
+        Array.from(selectedItems).map((id) => updateDoc(doc(db, "groceryItems", id), { completed: false })),
+      );
       setSelectedItems(new Set());
     } catch (error) {
-      console.error('Error marking items as unbought:', error);
+      console.error("Error marking items as unbought:", error);
     }
   };
 
   const deleteSelectedItems = async () => {
     if (selectedItems.size === 0) return;
     try {
-      await Promise.all(Array.from(selectedItems).map((id) => deleteDoc(doc(db, 'groceryItems', id))));
+      await Promise.all(Array.from(selectedItems).map((id) => deleteDoc(doc(db, "groceryItems", id))));
       setSelectedItems(new Set());
     } catch (error) {
-      console.error('Error deleting items:', error);
+      console.error("Error deleting items:", error);
     }
   };
 
@@ -128,9 +142,9 @@ export default function Home() {
   const toggleItemCompleted = async (e: React.MouseEvent, itemId: string, currentStatus: boolean) => {
     e.stopPropagation(); // Prevent selection toggle
     try {
-      await updateDoc(doc(db, 'groceryItems', itemId), { completed: !currentStatus });
+      await updateDoc(doc(db, "groceryItems", itemId), { completed: !currentStatus });
     } catch (error) {
-      console.error('Error toggling item:', error);
+      console.error("Error toggling item:", error);
     }
   };
 
@@ -139,27 +153,29 @@ export default function Home() {
       <ServiceWorkerRegistration />
       <InstallPrompt />
       {shouldShowApp && (
-        <div className='min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
-          <div className='container mx-auto px-4 py-8 max-w-2xl'>
+        <div className="h-[100dvh] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
+          <div className="container mx-auto px-4 py-8 max-w-2xl">
             {/* Header */}
-            <div className='mb-6'>
-              <h1 className='text-4xl font-semibold tracking-tight text-slate-800 dark:text-slate-100 mb-1'>Groceries</h1>
-              <p className='text-sm text-slate-500 dark:text-slate-400'>☁️ Synced</p>
+            <div className="mb-6">
+              <h1 className="text-4xl font-semibold tracking-tight text-slate-800 dark:text-slate-100 mb-1">
+                Groceries
+              </h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400">☁️ Synced</p>
             </div>
 
             {/* Add Item */}
-            <form onSubmit={addItem} className='mb-6'>
-              <div className='relative'>
+            <form onSubmit={addItem} className="mb-6">
+              <div className="relative">
                 <input
-                  type='text'
+                  type="text"
                   value={newItem}
                   onChange={(e) => setNewItem(e.target.value)}
-                  placeholder='Add item...'
-                  className='w-full px-4 py-3.5 text-base bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent dark:text-slate-100 placeholder-slate-400'
+                  placeholder="Add item..."
+                  className="w-full px-4 py-3.5 text-base bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent dark:text-slate-100 placeholder-slate-400"
                 />
                 <button
-                  type='submit'
-                  className='absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-indigo-500 hover:bg-indigo-600 active:scale-95 text-white rounded-full transition-all flex items-center justify-center font-bold text-lg shadow-sm'
+                  type="submit"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-indigo-500 hover:bg-indigo-600 active:scale-95 text-white rounded-full transition-all flex items-center justify-center font-bold text-lg shadow-sm"
                 >
                   +
                 </button>
@@ -168,24 +184,27 @@ export default function Home() {
 
             {/* Select All & Actions */}
             {items.length > 0 && (
-              <div className='mb-4'>
+              <div className="mb-4">
                 {selectedItems.size === 0 ? (
                   <button
                     onClick={toggleSelectAll}
-                    className='text-sm text-indigo-600 hover:text-indigo-700 active:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
+                    className="text-sm text-indigo-600 hover:text-indigo-700 active:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium"
                   >
                     Select all
                   </button>
                 ) : (
-                  <div className='flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-950/30 backdrop-blur-sm rounded-2xl border border-indigo-100 dark:border-indigo-900/50'>
-                    <button onClick={toggleSelectAll} className='text-sm text-indigo-700 dark:text-indigo-300 font-medium'>
-                      {selectedItems.size === items.length ? 'Deselect all' : `${selectedItems.size} selected`}
+                  <div className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-950/30 backdrop-blur-sm rounded-2xl border border-indigo-100 dark:border-indigo-900/50">
+                    <button
+                      onClick={toggleSelectAll}
+                      className="text-sm text-indigo-700 dark:text-indigo-300 font-medium"
+                    >
+                      {selectedItems.size === items.length ? "Deselect all" : `${selectedItems.size} selected`}
                     </button>
-                    <div className='flex-1'></div>
+                    <div className="flex-1"></div>
                     {Array.from(selectedItems).some((id) => !items.find((item) => item.id === id)?.completed) && (
                       <button
                         onClick={markSelectedAsBought}
-                        className='px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm'
+                        className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm"
                       >
                         ✓ Bought
                       </button>
@@ -193,14 +212,14 @@ export default function Home() {
                     {Array.from(selectedItems).some((id) => items.find((item) => item.id === id)?.completed) && (
                       <button
                         onClick={markSelectedAsUnbought}
-                        className='px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm'
+                        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm"
                       >
                         ↩ Unbought
                       </button>
                     )}
                     <button
                       onClick={deleteSelectedItems}
-                      className='px-4 py-2 bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm'
+                      className="px-4 py-2 bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm"
                     >
                       🗑 Delete
                     </button>
@@ -210,40 +229,44 @@ export default function Home() {
             )}
 
             {loading ? (
-              <div className='text-center py-16'>
-                <div className='inline-block animate-spin rounded-full h-10 w-10 border-3 border-slate-200 border-t-indigo-500'></div>
+              <div className="text-center py-16">
+                <div className="inline-block animate-spin rounded-full h-10 w-10 border-3 border-slate-200 border-t-indigo-500"></div>
               </div>
             ) : items.length === 0 ? (
-              <div className='text-center py-16'>
-                <p className='text-lg text-slate-400 dark:text-slate-500'>No items yet</p>
-                <p className='text-sm text-slate-400 dark:text-slate-600 mt-1'>Add your first item above</p>
+              <div className="text-center py-16">
+                <p className="text-lg text-slate-400 dark:text-slate-500">No items yet</p>
+                <p className="text-sm text-slate-400 dark:text-slate-600 mt-1">Add your first item above</p>
               </div>
             ) : (
-              <ul className='space-y-2'>
+              <ul className="space-y-2">
                 {items.map((item) => (
-                  <li key={item.id} className='flex items-stretch gap-2'>
+                  <li key={item.id} className="flex items-stretch gap-2">
                     <div
                       onClick={() => toggleSelection(item.id)}
                       className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer transition-all active:scale-[0.98] border flex-1 ${
                         selectedItems.has(item.id)
-                          ? 'bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-900/50 shadow-sm'
-                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:border-slate-300 dark:hover:border-slate-600'
+                          ? "bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-900/50 shadow-sm"
+                          : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:border-slate-300 dark:hover:border-slate-600"
                       }`}
                     >
                       <div
                         className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
-                          selectedItems.has(item.id) ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300 dark:border-slate-600'
+                          selectedItems.has(item.id)
+                            ? "border-indigo-500 bg-indigo-500"
+                            : "border-slate-300 dark:border-slate-600"
                         }`}
                       >
                         {selectedItems.has(item.id) && (
-                          <svg className='w-4 h-4 text-white' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                            <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={3} d='M5 13l4 4L19 7' />
+                          <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
                           </svg>
                         )}
                       </div>
                       <span
                         className={`flex-1 text-base transition-all ${
-                          item.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-100'
+                          item.completed
+                            ? "line-through text-slate-400 dark:text-slate-500"
+                            : "text-slate-700 dark:text-slate-100"
                         }`}
                       >
                         {item.name}
@@ -253,13 +276,13 @@ export default function Home() {
                       onClick={(e) => toggleItemCompleted(e, item.id, item.completed)}
                       className={`px-4 rounded-2xl flex items-center justify-center transition-all flex-shrink-0 active:scale-95 ${
                         item.completed
-                          ? 'bg-emerald-500 text-white'
-                          : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
+                          ? "bg-emerald-500 text-white"
+                          : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
                       }`}
-                      title={item.completed ? 'Mark as unbought' : 'Mark as bought'}
+                      title={item.completed ? "Mark as unbought" : "Mark as bought"}
                     >
-                      <svg className='w-5 h-5' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2.5} d='M5 13l4 4L19 7' />
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
                       </svg>
                     </button>
                   </li>
