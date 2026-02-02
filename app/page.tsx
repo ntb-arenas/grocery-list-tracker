@@ -1,34 +1,32 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { db } from "@/lib/firebase";
-import {
-  collection,
-  addDoc,
-  onSnapshot,
-  query,
-  orderBy,
-  serverTimestamp,
-  doc,
-  updateDoc,
-  deleteDoc,
-} from "firebase/firestore";
-import InstallPrompt from "./components/InstallPrompt";
-import ServiceWorkerRegistration from "./components/ServiceWorkerRegistration";
-
-interface GroceryItem {
-  id: string;
-  name: string;
-  completed: boolean;
-  createdAt: any;
-}
+import { useState, useEffect } from 'react';
+import InstallPrompt from './components/InstallPrompt';
+import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
+import useGroceryLists from '@/lib/hooks/useGroceryLists';
+import AddItemForm from './components/AddItemForm';
+import ListCodeBox from './components/ListCodeBox';
+import ItemsSection from './components/ItemsSection';
 
 export default function Home() {
-  const [items, setItems] = useState<GroceryItem[]>([]);
-  const [newItem, setNewItem] = useState("");
-  const [loading, setLoading] = useState(true);
+  const {
+    globalItems,
+    listItems,
+    loading,
+    listCode,
+    setListCode,
+    claiming,
+    claimList,
+    addItemToActive,
+    toggleItem,
+    markItems,
+    deleteItems,
+    getCombinedItems,
+  } = useGroceryLists();
+  const [newItem, setNewItem] = useState('');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [shouldShowApp, setShouldShowApp] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
 
   // Check if app should be shown (PWA or bypassed install)
   useEffect(() => {
@@ -49,44 +47,15 @@ export default function Home() {
     };
   }, []);
 
-  // Load items from Firebase
-  useEffect(() => {
-    const q = query(collection(db, "groceryItems"), orderBy("createdAt", "desc"));
-
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const itemsData: GroceryItem[] = [];
-        snapshot.forEach((doc) => {
-          itemsData.push({ id: doc.id, ...doc.data() } as GroceryItem);
-        });
-        setItems(itemsData);
-        setLoading(false);
-      },
-      (error) => {
-        console.error("Firebase error:", error);
-        setLoading(false);
-      },
-    );
-
-    return () => unsubscribe();
-  }, []);
-
-  // Add item
   const addItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItem.trim()) return;
-
     try {
-      await addDoc(collection(db, "groceryItems"), {
-        name: newItem,
-        completed: false,
-        createdAt: serverTimestamp(),
-      });
-      setNewItem("");
-    } catch (error) {
-      console.error("Error adding item:", error);
-      alert("Error adding item. Please check your Firebase configuration.");
+      await addItemToActive(newItem.trim());
+      setNewItem('');
+    } catch (err) {
+      console.error(err);
+      alert('Error adding item');
     }
   };
 
@@ -100,52 +69,32 @@ export default function Home() {
   };
 
   const toggleSelectAll = () => {
-    setSelectedItems(selectedItems.size === items.length ? new Set() : new Set(items.map((item) => item.id)));
+    const combined = getCombinedItems();
+    setSelectedItems(selectedItems.size === combined.length ? new Set() : new Set(combined.map((item) => item.id)));
   };
 
-  // Bulk actions
+  // Bulk actions (scoped per-item based on combined id)
   const markSelectedAsBought = async () => {
     if (selectedItems.size === 0) return;
-    try {
-      await Promise.all(
-        Array.from(selectedItems).map((id) => updateDoc(doc(db, "groceryItems", id), { completed: true })),
-      );
-      setSelectedItems(new Set());
-    } catch (error) {
-      console.error("Error marking items as bought:", error);
-    }
+    await markItems(Array.from(selectedItems), true);
+    setSelectedItems(new Set());
   };
 
   const markSelectedAsUnbought = async () => {
     if (selectedItems.size === 0) return;
-    try {
-      await Promise.all(
-        Array.from(selectedItems).map((id) => updateDoc(doc(db, "groceryItems", id), { completed: false })),
-      );
-      setSelectedItems(new Set());
-    } catch (error) {
-      console.error("Error marking items as unbought:", error);
-    }
+    await markItems(Array.from(selectedItems), false);
+    setSelectedItems(new Set());
   };
 
   const deleteSelectedItems = async () => {
     if (selectedItems.size === 0) return;
-    try {
-      await Promise.all(Array.from(selectedItems).map((id) => deleteDoc(doc(db, "groceryItems", id))));
-      setSelectedItems(new Set());
-    } catch (error) {
-      console.error("Error deleting items:", error);
-    }
+    await deleteItems(Array.from(selectedItems));
+    setSelectedItems(new Set());
   };
 
-  // Quick toggle for single item
-  const toggleItemCompleted = async (e: React.MouseEvent, itemId: string, currentStatus: boolean) => {
+  const toggleItemCompleted = async (e: React.MouseEvent, combinedId: string, currentStatus: boolean) => {
     e.stopPropagation(); // Prevent selection toggle
-    try {
-      await updateDoc(doc(db, "groceryItems", itemId), { completed: !currentStatus });
-    } catch (error) {
-      console.error("Error toggling item:", error);
-    }
+    await toggleItem(combinedId, currentStatus);
   };
 
   return (
@@ -153,8 +102,24 @@ export default function Home() {
       <ServiceWorkerRegistration />
       <InstallPrompt />
       {shouldShowApp && (
-        <div className="h-[100dvh] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900">
-          <div className="container mx-auto px-4 py-8 max-w-2xl">
+        <div className='min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
+          <ListCodeBox
+            listCode={listCode}
+            codeInput={codeInput}
+            setCodeInput={setCodeInput}
+            claiming={claiming}
+            onClaim={(code) => claimList(code)}
+            onGenerate={(code) => {
+              setCodeInput(code);
+              claimList(code);
+            }}
+            onClear={() => {
+              localStorage.removeItem('groceryListCode');
+              setListCode(null);
+              setCodeInput('');
+            }}
+          />
+          <div className='container mx-auto px-4 py-8 max-w-2xl'>
             {/* Header */}
             <div className="mb-6">
               <h1 className="text-4xl font-semibold tracking-tight text-slate-800 dark:text-slate-100 mb-1">
@@ -164,27 +129,11 @@ export default function Home() {
             </div>
 
             {/* Add Item */}
-            <form onSubmit={addItem} className="mb-6">
-              <div className="relative">
-                <input
-                  type="text"
-                  value={newItem}
-                  onChange={(e) => setNewItem(e.target.value)}
-                  placeholder="Add item..."
-                  className="w-full px-4 py-3.5 text-base bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent dark:text-slate-100 placeholder-slate-400"
-                />
-                <button
-                  type="submit"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-indigo-500 hover:bg-indigo-600 active:scale-95 text-white rounded-full transition-all flex items-center justify-center font-bold text-lg shadow-sm"
-                >
-                  +
-                </button>
-              </div>
-            </form>
+            <AddItemForm value={newItem} onChange={setNewItem} onSubmit={addItem} />
 
             {/* Select All & Actions */}
-            {items.length > 0 && (
-              <div className="mb-4">
+            {getCombinedItems().length > 0 && (
+              <div className='mb-4'>
                 {selectedItems.size === 0 ? (
                   <button
                     onClick={toggleSelectAll}
@@ -193,15 +142,12 @@ export default function Home() {
                     Select all
                   </button>
                 ) : (
-                  <div className="flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-950/30 backdrop-blur-sm rounded-2xl border border-indigo-100 dark:border-indigo-900/50">
-                    <button
-                      onClick={toggleSelectAll}
-                      className="text-sm text-indigo-700 dark:text-indigo-300 font-medium"
-                    >
-                      {selectedItems.size === items.length ? "Deselect all" : `${selectedItems.size} selected`}
+                  <div className='flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-950/30 backdrop-blur-sm rounded-2xl border border-indigo-100 dark:border-indigo-900/50'>
+                    <button onClick={toggleSelectAll} className='text-sm text-indigo-700 dark:text-indigo-300 font-medium'>
+                      {selectedItems.size === getCombinedItems().length ? 'Deselect all' : `${selectedItems.size} selected`}
                     </button>
-                    <div className="flex-1"></div>
-                    {Array.from(selectedItems).some((id) => !items.find((item) => item.id === id)?.completed) && (
+                    <div className='flex-1'></div>
+                    {Array.from(selectedItems).some((id) => !getCombinedItems().find((item) => item.id === id)?.completed) && (
                       <button
                         onClick={markSelectedAsBought}
                         className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm"
@@ -209,7 +155,7 @@ export default function Home() {
                         ✓ Bought
                       </button>
                     )}
-                    {Array.from(selectedItems).some((id) => items.find((item) => item.id === id)?.completed) && (
+                    {Array.from(selectedItems).some((id) => getCombinedItems().find((item) => item.id === id)?.completed) && (
                       <button
                         onClick={markSelectedAsUnbought}
                         className="px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm"
@@ -232,62 +178,35 @@ export default function Home() {
               <div className="text-center py-16">
                 <div className="inline-block animate-spin rounded-full h-10 w-10 border-3 border-slate-200 border-t-indigo-500"></div>
               </div>
-            ) : items.length === 0 ? (
-              <div className="text-center py-16">
-                <p className="text-lg text-slate-400 dark:text-slate-500">No items yet</p>
-                <p className="text-sm text-slate-400 dark:text-slate-600 mt-1">Add your first item above</p>
+            ) : getCombinedItems().length === 0 ? (
+              <div className='text-center py-16'>
+                <p className='text-lg text-slate-400 dark:text-slate-500'>No items yet</p>
+                <p className='text-sm text-slate-400 dark:text-slate-600 mt-1'>Add your first item above</p>
               </div>
             ) : (
-              <ul className="space-y-2">
-                {items.map((item) => (
-                  <li key={item.id} className="flex items-stretch gap-2">
-                    <div
-                      onClick={() => toggleSelection(item.id)}
-                      className={`flex items-center gap-3 p-4 rounded-2xl cursor-pointer transition-all active:scale-[0.98] border flex-1 ${
-                        selectedItems.has(item.id)
-                          ? "bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-900/50 shadow-sm"
-                          : "bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:border-slate-300 dark:hover:border-slate-600"
-                      }`}
-                    >
-                      <div
-                        className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
-                          selectedItems.has(item.id)
-                            ? "border-indigo-500 bg-indigo-500"
-                            : "border-slate-300 dark:border-slate-600"
-                        }`}
-                      >
-                        {selectedItems.has(item.id) && (
-                          <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
-                          </svg>
-                        )}
-                      </div>
-                      <span
-                        className={`flex-1 text-base transition-all ${
-                          item.completed
-                            ? "line-through text-slate-400 dark:text-slate-500"
-                            : "text-slate-700 dark:text-slate-100"
-                        }`}
-                      >
-                        {item.name}
-                      </span>
-                    </div>
-                    <button
-                      onClick={(e) => toggleItemCompleted(e, item.id, item.completed)}
-                      className={`px-4 rounded-2xl flex items-center justify-center transition-all flex-shrink-0 active:scale-95 ${
-                        item.completed
-                          ? "bg-emerald-500 text-white"
-                          : "bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400"
-                      }`}
-                      title={item.completed ? "Mark as unbought" : "Mark as bought"}
-                    >
-                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M5 13l4 4L19 7" />
-                      </svg>
-                    </button>
-                  </li>
-                ))}
-              </ul>
+              <div className='space-y-6'>
+                {/* Personal list section */}
+                {listItems.length > 0 && (
+                  <ItemsSection
+                    title={`Personal list (${listCode})`}
+                    items={listItems}
+                    selected={selectedItems}
+                    onToggleSelect={toggleSelection}
+                    onToggleComplete={toggleItemCompleted}
+                  />
+                )}
+
+                {/* Global section */}
+                {globalItems.length > 0 && (
+                  <ItemsSection
+                    title='Global list'
+                    items={globalItems}
+                    selected={selectedItems}
+                    onToggleSelect={toggleSelection}
+                    onToggleComplete={toggleItemCompleted}
+                  />
+                )}
+              </div>
             )}
           </div>
         </div>
