@@ -59,15 +59,14 @@ export default function InstallPrompt() {
             <span className='text-5xl'>🛒</span>
           </div>
           <h1 className='text-4xl font-bold text-white mb-2'>Groceries</h1>
-          <p className='text-indigo-100 dark:text-indigo-200'>Smart grocery list tracker</p>
+          <p className='text-indigo-100 dark:text-indigo-200'>Grocery list tracker</p>
         </div>
 
         {/* Features */}
         <div className='bg-white/10 dark:bg-black/20 backdrop-blur-lg rounded-3xl p-6 mb-6 border border-white/20'>
           <div className='space-y-4'>
-            <Feature icon='☁️' title='Cloud Sync' description='Access your list from any device' />
-            <Feature icon='📱' title='Offline Mode' description='Works without internet' />
-            <Feature icon='✓' title='Quick Actions' description='Multi-select and bulk operations' />
+            <Feature icon='☁️' title='Cloud Sync' description='Lahat updated, kahit nasa CR ka' />
+            <Feature icon='✓' title='Quick Actions' description='Bulk add/remove. Kasi tamad tayo lahat.' />
           </div>
         </div>
 
@@ -89,7 +88,7 @@ export default function InstallPrompt() {
                     Tap the <strong className='text-indigo-600 dark:text-indigo-400'>Share</strong> button
                   </p>
                   <p className='text-sm text-slate-600 dark:text-slate-400'>
-                    Look for the square with an arrow pointing up ⬆️ at the bottom of your screen
+                    Look for the square with an arrow pointing up ⬆️
                   </p>
                 </div>
               </div>
