@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
-import { collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import { collection, addDoc, onSnapshot, query, orderBy, serverTimestamp, doc, updateDoc, deleteDoc } from 'firebase/firestore';
 import InstallPrompt from './components/InstallPrompt';
 import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
 
@@ -87,6 +87,10 @@ export default function Home() {
     }
   }, [items, storageMode, loading]);
 
+  // Utility: get item by id
+  const getItemById = (id: string) => items.find(item => item.id === id);
+
+  // Add item
   const addItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItem.trim()) return;
@@ -116,56 +120,29 @@ export default function Home() {
     }
   };
 
-  const toggleItem = async (id: string, completed: boolean) => {
-    if (storageMode === 'local') {
-      setItems(items.map((item) => (item.id === id ? { ...item, completed: !completed } : item)));
-      return;
-    }
-
-    try {
-      await updateDoc(doc(db, 'groceryItems', id), {
-        completed: !completed,
-      });
-    } catch (error) {
-      console.error('Error updating item:', error);
-    }
-  };
-
-  const deleteItem = async (id: string) => {
-    if (storageMode === 'local') {
-      setItems(items.filter((item) => item.id !== id));
-      return;
-    }
-
-    try {
-      await deleteDoc(doc(db, 'groceryItems', id));
-    } catch (error) {
-      console.error('Error deleting item:', error);
-    }
-  };
-
+  // Selection logic
   const toggleSelection = (id: string) => {
-    const newSelection = new Set(selectedItems);
-    if (newSelection.has(id)) {
-      newSelection.delete(id);
-    } else {
-      newSelection.add(id);
-    }
-    setSelectedItems(newSelection);
+    setSelectedItems(prev => {
+      const newSelection = new Set(prev);
+      newSelection.has(id) ? newSelection.delete(id) : newSelection.add(id);
+      return newSelection;
+    });
   };
 
+  const toggleSelectAll = () => {
+    setSelectedItems(selectedItems.size === items.length ? new Set() : new Set(items.map(item => item.id)));
+  };
+
+  // Bulk actions
   const markSelectedAsBought = async () => {
     if (selectedItems.size === 0) return;
-
     if (storageMode === 'local') {
       setItems(items.map((item) => (selectedItems.has(item.id) ? { ...item, completed: true } : item)));
       setSelectedItems(new Set());
       return;
     }
-
     try {
-      const promises = Array.from(selectedItems).map((id) => updateDoc(doc(db, 'groceryItems', id), { completed: true }));
-      await Promise.all(promises);
+      await Promise.all(Array.from(selectedItems).map((id) => updateDoc(doc(db, 'groceryItems', id), { completed: true })));
       setSelectedItems(new Set());
     } catch (error) {
       console.error('Error marking items as bought:', error);
@@ -174,16 +151,13 @@ export default function Home() {
 
   const markSelectedAsUnbought = async () => {
     if (selectedItems.size === 0) return;
-
     if (storageMode === 'local') {
       setItems(items.map((item) => (selectedItems.has(item.id) ? { ...item, completed: false } : item)));
       setSelectedItems(new Set());
       return;
     }
-
     try {
-      const promises = Array.from(selectedItems).map((id) => updateDoc(doc(db, 'groceryItems', id), { completed: false }));
-      await Promise.all(promises);
+      await Promise.all(Array.from(selectedItems).map((id) => updateDoc(doc(db, 'groceryItems', id), { completed: false })));
       setSelectedItems(new Set());
     } catch (error) {
       console.error('Error marking items as unbought:', error);
@@ -192,27 +166,16 @@ export default function Home() {
 
   const deleteSelectedItems = async () => {
     if (selectedItems.size === 0) return;
-
     if (storageMode === 'local') {
       setItems(items.filter((item) => !selectedItems.has(item.id)));
       setSelectedItems(new Set());
       return;
     }
-
     try {
-      const promises = Array.from(selectedItems).map((id) => deleteDoc(doc(db, 'groceryItems', id)));
-      await Promise.all(promises);
+      await Promise.all(Array.from(selectedItems).map((id) => deleteDoc(doc(db, 'groceryItems', id))));
       setSelectedItems(new Set());
     } catch (error) {
       console.error('Error deleting items:', error);
-    }
-  };
-
-  const toggleSelectAll = () => {
-    if (selectedItems.size === items.length) {
-      setSelectedItems(new Set());
-    } else {
-      setSelectedItems(new Set(items.map((item) => item.id)));
     }
   };
 
