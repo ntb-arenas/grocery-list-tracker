@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { collection, addDoc, deleteDoc, doc, onSnapshot, updateDoc, query, orderBy, serverTimestamp } from 'firebase/firestore';
+import InstallPrompt from './components/InstallPrompt';
 
 interface GroceryItem {
   id: string;
@@ -184,130 +185,123 @@ export default function Home() {
     if (selectedItems.size === items.length) {
       setSelectedItems(new Set());
     } else {
-      setSelectedItems(new Set(items.map(item => item.id)));
+      setSelectedItems(new Set(items.map((item) => item.id)));
     }
   };
 
   return (
-    <div className='min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900'>
-      <div className='container mx-auto px-4 py-8 max-w-2xl'>
-        {/* Header */}
-        <div className='mb-6'>
-          <h1 className='text-4xl font-semibold tracking-tight text-gray-900 dark:text-white mb-1'>
-            Groceries
-          </h1>
-          <p className='text-sm text-gray-500 dark:text-gray-400'>
-            {storageMode === 'firebase' ? '☁️ Synced' : '📱 Local'}
-          </p>
-        </div>
-
-        {/* Add Item */}
-        <form onSubmit={addItem} className='mb-6'>
-          <div className='relative'>
-            <input
-              type='text'
-              value={newItem}
-              onChange={(e) => setNewItem(e.target.value)}
-              placeholder='Add item...'
-              className='w-full px-4 py-3.5 text-base bg-white dark:bg-gray-800 border-0 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white placeholder-gray-400'
-            />
-            <button
-              type='submit'
-              className='absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white rounded-full transition-all flex items-center justify-center font-bold text-lg'
-            >
-              +
-            </button>
+    <>
+      <InstallPrompt />
+      <div className='min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900'>
+        <div className='container mx-auto px-4 py-8 max-w-2xl'>
+          {/* Header */}
+          <div className='mb-6'>
+            <h1 className='text-4xl font-semibold tracking-tight text-gray-900 dark:text-white mb-1'>Groceries</h1>
+            <p className='text-sm text-gray-500 dark:text-gray-400'>{storageMode === 'firebase' ? '☁️ Synced' : '📱 Local'}</p>
           </div>
-        </form>
 
-        {/* Select All & Actions */}
-        {items.length > 0 && (
-          <div className='mb-4'>
-            {selectedItems.size === 0 ? (
+          {/* Add Item */}
+          <form onSubmit={addItem} className='mb-6'>
+            <div className='relative'>
+              <input
+                type='text'
+                value={newItem}
+                onChange={(e) => setNewItem(e.target.value)}
+                placeholder='Add item...'
+                className='w-full px-4 py-3.5 text-base bg-white dark:bg-gray-800 border-0 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white placeholder-gray-400'
+              />
               <button
-                onClick={toggleSelectAll}
-                className='text-sm text-blue-500 hover:text-blue-600 active:text-blue-700 font-medium'
+                type='submit'
+                className='absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white rounded-full transition-all flex items-center justify-center font-bold text-lg'
               >
-                Select all
+                +
               </button>
-            ) : (
-              <div className='flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl'>
+            </div>
+          </form>
+
+          {/* Select All & Actions */}
+          {items.length > 0 && (
+            <div className='mb-4'>
+              {selectedItems.size === 0 ? (
                 <button
                   onClick={toggleSelectAll}
-                  className='text-sm text-blue-600 dark:text-blue-400 font-medium'
+                  className='text-sm text-blue-500 hover:text-blue-600 active:text-blue-700 font-medium'
                 >
-                  {selectedItems.size === items.length ? 'Deselect all' : `${selectedItems.size} selected`}
+                  Select all
                 </button>
-                <div className='flex-1'></div>
-                <button
-                  onClick={markSelectedAsBought}
-                  className='px-4 py-2 bg-green-500 hover:bg-green-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all'
-                >
-                  ✓ Bought
-                </button>
-                <button
-                  onClick={deleteSelectedItems}
-                  className='px-4 py-2 bg-red-500 hover:bg-red-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all'
-                >
-                  Delete
-                </button>
-              </div>
-            )}
-          </div>
-        )}
-
-        {loading ? (
-          <div className='text-center py-16'>
-            <div className='inline-block animate-spin rounded-full h-10 w-10 border-3 border-gray-300 border-t-blue-500'></div>
-          </div>
-        ) : items.length === 0 ? (
-          <div className='text-center py-16'>
-            <p className='text-lg text-gray-400 dark:text-gray-500'>No items yet</p>
-            <p className='text-sm text-gray-400 dark:text-gray-600 mt-1'>Add your first item above</p>
-          </div>
-        ) : (
-          <ul className='space-y-2'>
-            {items.map((item) => (
-              <li
-                key={item.id}
-                onClick={() => toggleSelection(item.id)}
-                className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all active:scale-[0.98] ${
-                  selectedItems.has(item.id)
-                    ? 'bg-blue-50 dark:bg-blue-900/20 shadow-sm'
-                    : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/80'}`}
-              >
-                <div
-                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
-                    selectedItems.has(item.id)
-                      ? 'border-blue-500 bg-blue-500'
-                      : 'border-gray-300 dark:border-gray-600'
-                  }`}
-                >
-                  {selectedItems.has(item.id) && (
-                    <svg className='w-4 h-4 text-white' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={3} d='M5 13l4 4L19 7' />
-                    </svg>
-                  )}
+              ) : (
+                <div className='flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl'>
+                  <button onClick={toggleSelectAll} className='text-sm text-blue-600 dark:text-blue-400 font-medium'>
+                    {selectedItems.size === items.length ? 'Deselect all' : `${selectedItems.size} selected`}
+                  </button>
+                  <div className='flex-1'></div>
+                  <button
+                    onClick={markSelectedAsBought}
+                    className='px-4 py-2 bg-green-500 hover:bg-green-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all'
+                  >
+                    ✓ Bought
+                  </button>
+                  <button
+                    onClick={deleteSelectedItems}
+                    className='px-4 py-2 bg-red-500 hover:bg-red-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all'
+                  >
+                    Delete
+                  </button>
                 </div>
-                <span
-                  className={`flex-1 text-base transition-all ${
-                    item.completed
-                      ? 'line-through text-gray-400 dark:text-gray-500'
-                      : 'text-gray-900 dark:text-white'
+              )}
+            </div>
+          )}
+
+          {loading ? (
+            <div className='text-center py-16'>
+              <div className='inline-block animate-spin rounded-full h-10 w-10 border-3 border-gray-300 border-t-blue-500'></div>
+            </div>
+          ) : items.length === 0 ? (
+            <div className='text-center py-16'>
+              <p className='text-lg text-gray-400 dark:text-gray-500'>No items yet</p>
+              <p className='text-sm text-gray-400 dark:text-gray-600 mt-1'>Add your first item above</p>
+            </div>
+          ) : (
+            <ul className='space-y-2'>
+              {items.map((item) => (
+                <li
+                  key={item.id}
+                  onClick={() => toggleSelection(item.id)}
+                  className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all active:scale-[0.98] ${
+                    selectedItems.has(item.id)
+                      ? 'bg-blue-50 dark:bg-blue-900/20 shadow-sm'
+                      : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/80'
                   }`}
                 >
-                  {item.name}
-                </span>
-                {item.completed && (
-                  <span className='px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full'>
-                    Bought
+                  <div
+                    className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                      selectedItems.has(item.id) ? 'border-blue-500 bg-blue-500' : 'border-gray-300 dark:border-gray-600'
+                    }`}
+                  >
+                    {selectedItems.has(item.id) && (
+                      <svg className='w-4 h-4 text-white' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                        <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={3} d='M5 13l4 4L19 7' />
+                      </svg>
+                    )}
+                  </div>
+                  <span
+                    className={`flex-1 text-base transition-all ${
+                      item.completed ? 'line-through text-gray-400 dark:text-gray-500' : 'text-gray-900 dark:text-white'
+                    }`}
+                  >
+                    {item.name}
                   </span>
-                )}
-              </li>
-            ))}
-          </ul>
-        )}
+                  {item.completed && (
+                    <span className='px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full'>
+                      Bought
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

@@ -1,12 +1,14 @@
 {
-  "name": "Grocery List Tracker",
-  "short_name": "Grocery List",
-  "description": "Track your grocery items with ease",
+  "name": "Groceries - Smart List Tracker",
+  "short_name": "Groceries",
+  "description": "Track your grocery items with cloud sync and offline support",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",
-  "theme_color": "#4F46E5",
+  "theme_color": "#3B82F6",
   "orientation": "portrait",
+  "scope": "/",
+  "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icon-192x192.png",
