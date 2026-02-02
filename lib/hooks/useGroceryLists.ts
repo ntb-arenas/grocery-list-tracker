@@ -146,6 +146,18 @@ export default function useGroceryLists(initialCode?: string) {
     }
   }
 
+  // Explicit helpers: add to global or add to current personal list
+  async function addItemToGlobal(text: string) {
+    if (!text.trim()) return;
+    await addDoc(collection(db, 'groceryItems'), { name: text, completed: false, createdAt: serverTimestamp() });
+  }
+
+  async function addItemToList(text: string) {
+    if (!text.trim()) return;
+    if (!listCode) throw new Error('No active list code');
+    await addDoc(collection(db, 'lists', listCode, 'items'), { name: text, completed: false, createdAt: serverTimestamp() });
+  }
+
   async function markItems(combinedIds: string[], completed: boolean) {
     await Promise.all(combinedIds.map((id) => updateDoc(getDocRefForCombinedId(id), { completed })));
   }
@@ -178,6 +190,8 @@ export default function useGroceryLists(initialCode?: string) {
     generateCode,
     claimList,
     addItemToActive,
+    addItemToGlobal,
+    addItemToList,
     markItems,
     deleteItems,
     toggleItem,
