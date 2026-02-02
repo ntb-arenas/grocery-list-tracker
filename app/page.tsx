@@ -251,10 +251,10 @@ export default function Home() {
                     </div>
                     <button
                       onClick={(e) => toggleItemCompleted(e, item.id, item.completed)}
-                      className={`px-4 rounded-2xl flex items-center justify-center transition-all flex-shrink-0 ${
+                      className={`px-4 rounded-2xl flex items-center justify-center transition-all flex-shrink-0 active:scale-95 ${
                         item.completed
-                          ? 'bg-emerald-500 hover:bg-emerald-600 text-white'
-                          : 'bg-slate-200 hover:bg-emerald-500 dark:bg-slate-700 dark:hover:bg-emerald-600 text-slate-600 dark:text-slate-400 hover:text-white'
+                          ? 'bg-emerald-500 text-white'
+                          : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
                       }`}
                       title={item.completed ? 'Mark as unbought' : 'Mark as bought'}
                     >
