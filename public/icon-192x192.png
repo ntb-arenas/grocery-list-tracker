@@ -1,0 +1,8 @@
+<svg width="192" height="192" viewBox="0 0 192 192" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <rect width="192" height="192" rx="48" fill="#4F46E5"/>
+  <path d="M96 48L120 72H104V104H88V72H72L96 48Z" fill="white"/>
+  <rect x="56" y="112" width="80" height="8" rx="4" fill="white"/>
+  <rect x="56" y="128" width="80" height="8" rx="4" fill="white"/>
+  <rect x="56" y="144" width="80" height="8" rx="4" fill="white"/>
+  <text x="96" y="110" font-family="Arial" font-size="48" fill="white" text-anchor="middle">🛒</text>
+</svg>
