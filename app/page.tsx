@@ -11,29 +11,87 @@ interface GroceryItem {
   createdAt: any;
 }
 
+const STORAGE_KEY = 'grocery-items';
+
 export default function Home() {
   const [items, setItems] = useState<GroceryItem[]>([]);
   const [newItem, setNewItem] = useState('');
   const [loading, setLoading] = useState(true);
+  const [storageMode, setStorageMode] = useState<'firebase' | 'local'>('local');
+  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
 
+  // Load from localStorage on mount
   useEffect(() => {
+    const USE_FIREBASE = typeof window !== 'undefined' && process.env.NEXT_PUBLIC_FIREBASE_API_KEY;
+
+    console.log('🔥 Firebase check:', {
+      USE_FIREBASE,
+      apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY ? 'SET' : 'NOT SET',
+      projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID,
+    });
+
+    if (!USE_FIREBASE) {
+      console.log('📦 Using localStorage mode');
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored) {
+        setItems(JSON.parse(stored));
+      }
+      setLoading(false);
+      setStorageMode('local');
+      return;
+    }
+
+    // Try Firebase first
+    console.log('☁️ Attempting Firebase connection...');
+    setStorageMode('firebase');
     const q = query(collection(db, 'groceryItems'), orderBy('createdAt', 'desc'));
 
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const itemsData: GroceryItem[] = [];
-      snapshot.forEach((doc) => {
-        itemsData.push({ id: doc.id, ...doc.data() } as GroceryItem);
-      });
-      setItems(itemsData);
-      setLoading(false);
-    });
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        const itemsData: GroceryItem[] = [];
+        snapshot.forEach((doc) => {
+          itemsData.push({ id: doc.id, ...doc.data() } as GroceryItem);
+        });
+        setItems(itemsData);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Firebase error, falling back to localStorage:', error);
+        setStorageMode('local');
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored) {
+          setItems(JSON.parse(stored));
+        }
+        setLoading(false);
+      },
+    );
 
     return () => unsubscribe();
   }, []);
 
+  // Save to localStorage whenever items change (for local mode)
+  useEffect(() => {
+    if (storageMode === 'local' && !loading) {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+    }
+  }, [items, storageMode, loading]);
+
   const addItem = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newItem.trim()) return;
+
+    if (storageMode === 'local') {
+      const newItemObj: GroceryItem = {
+        id: Date.now().toString(),
+        name: newItem,
+        completed: false,
+        createdAt: Date.now(),
+      };
+      setItems([newItemObj, ...items]);
+      setNewItem('');
+      return;
+    }
 
     try {
       await addDoc(collection(db, 'groceryItems'), {
@@ -49,6 +107,11 @@ export default function Home() {
   };
 
   const toggleItem = async (id: string, completed: boolean) => {
+    if (storageMode === 'local') {
+      setItems(items.map((item) => (item.id === id ? { ...item, completed: !completed } : item)));
+      return;
+    }
+
     try {
       await updateDoc(doc(db, 'groceryItems', id), {
         completed: !completed,
@@ -59,6 +122,11 @@ export default function Home() {
   };
 
   const deleteItem = async (id: string) => {
+    if (storageMode === 'local') {
+      setItems(items.filter((item) => item.id !== id));
+      return;
+    }
+
     try {
       await deleteDoc(doc(db, 'groceryItems', id));
     } catch (error) {
@@ -66,77 +134,179 @@ export default function Home() {
     }
   };
 
+  const toggleSelection = (id: string) => {
+    const newSelection = new Set(selectedItems);
+    if (newSelection.has(id)) {
+      newSelection.delete(id);
+    } else {
+      newSelection.add(id);
+    }
+    setSelectedItems(newSelection);
+  };
+
+  const markSelectedAsBought = async () => {
+    if (selectedItems.size === 0) return;
+
+    if (storageMode === 'local') {
+      setItems(items.map((item) => (selectedItems.has(item.id) ? { ...item, completed: true } : item)));
+      setSelectedItems(new Set());
+      return;
+    }
+
+    try {
+      const promises = Array.from(selectedItems).map((id) => updateDoc(doc(db, 'groceryItems', id), { completed: true }));
+      await Promise.all(promises);
+      setSelectedItems(new Set());
+    } catch (error) {
+      console.error('Error marking items as bought:', error);
+    }
+  };
+
+  const deleteSelectedItems = async () => {
+    if (selectedItems.size === 0) return;
+
+    if (storageMode === 'local') {
+      setItems(items.filter((item) => !selectedItems.has(item.id)));
+      setSelectedItems(new Set());
+      return;
+    }
+
+    try {
+      const promises = Array.from(selectedItems).map((id) => deleteDoc(doc(db, 'groceryItems', id)));
+      await Promise.all(promises);
+      setSelectedItems(new Set());
+    } catch (error) {
+      console.error('Error deleting items:', error);
+    }
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedItems.size === items.length) {
+      setSelectedItems(new Set());
+    } else {
+      setSelectedItems(new Set(items.map(item => item.id)));
+    }
+  };
+
   return (
-    <div className='min-h-screen bg-gradient-to-br from-indigo-100 via-purple-50 to-pink-100 dark:from-gray-900 dark:via-purple-900 dark:to-indigo-900'>
+    <div className='min-h-screen bg-gradient-to-b from-gray-50 to-white dark:from-gray-950 dark:to-gray-900'>
       <div className='container mx-auto px-4 py-8 max-w-2xl'>
-        <div className='bg-white dark:bg-gray-800 rounded-2xl shadow-2xl p-8'>
-          <h1 className='text-4xl font-bold text-center mb-8 bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent'>
-            🛒 Grocery List Tracker
+        {/* Header */}
+        <div className='mb-6'>
+          <h1 className='text-4xl font-semibold tracking-tight text-gray-900 dark:text-white mb-1'>
+            Groceries
           </h1>
-
-          <form onSubmit={addItem} className='mb-8'>
-            <div className='flex gap-2'>
-              <input
-                type='text'
-                value={newItem}
-                onChange={(e) => setNewItem(e.target.value)}
-                placeholder='Add a new item...'
-                className='flex-1 px-4 py-3 border-2 border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:border-indigo-500 dark:bg-gray-700 dark:text-white transition-colors'
-              />
-              <button
-                type='submit'
-                className='px-6 py-3 bg-indigo-600 hover:bg-indigo-700 text-white font-semibold rounded-lg transition-colors shadow-lg hover:shadow-xl'
-              >
-                Add
-              </button>
-            </div>
-          </form>
-
-          {loading ? (
-            <div className='text-center py-8'>
-              <div className='inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-indigo-600'></div>
-              <p className='mt-4 text-gray-600 dark:text-gray-400'>Loading items...</p>
-            </div>
-          ) : items.length === 0 ? (
-            <div className='text-center py-12'>
-              <p className='text-gray-500 dark:text-gray-400 text-lg'>No items yet. Add your first grocery item! 🎉</p>
-            </div>
-          ) : (
-            <ul className='space-y-3'>
-              {items.map((item) => (
-                <li
-                  key={item.id}
-                  className='flex items-center gap-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:shadow-md transition-shadow'
-                >
-                  <input
-                    type='checkbox'
-                    checked={item.completed}
-                    onChange={() => toggleItem(item.id, item.completed)}
-                    className='w-5 h-5 text-indigo-600 rounded focus:ring-2 focus:ring-indigo-500 cursor-pointer'
-                  />
-                  <span
-                    className={`flex-1 ${
-                      item.completed ? 'line-through text-gray-400' : 'text-gray-800 dark:text-white'
-                    } transition-all`}
-                  >
-                    {item.name}
-                  </span>
-                  <button
-                    onClick={() => deleteItem(item.id)}
-                    className='px-3 py-1 bg-red-500 hover:bg-red-600 text-white rounded-md transition-colors text-sm font-medium'
-                  >
-                    Delete
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <div className='mt-8 pt-6 border-t border-gray-200 dark:border-gray-600 text-center text-sm text-gray-600 dark:text-gray-400'>
-            <p>📱 Install this app for offline access!</p>
-            <p className='mt-2'>Next.js + Firestore + PWA</p>
-          </div>
+          <p className='text-sm text-gray-500 dark:text-gray-400'>
+            {storageMode === 'firebase' ? '☁️ Synced' : '📱 Local'}
+          </p>
         </div>
+
+        {/* Add Item */}
+        <form onSubmit={addItem} className='mb-6'>
+          <div className='relative'>
+            <input
+              type='text'
+              value={newItem}
+              onChange={(e) => setNewItem(e.target.value)}
+              placeholder='Add item...'
+              className='w-full px-4 py-3.5 text-base bg-white dark:bg-gray-800 border-0 rounded-2xl shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 dark:text-white placeholder-gray-400'
+            />
+            <button
+              type='submit'
+              className='absolute right-2 top-1/2 -translate-y-1/2 w-9 h-9 bg-blue-500 hover:bg-blue-600 active:scale-95 text-white rounded-full transition-all flex items-center justify-center font-bold text-lg'
+            >
+              +
+            </button>
+          </div>
+        </form>
+
+        {/* Select All & Actions */}
+        {items.length > 0 && (
+          <div className='mb-4'>
+            {selectedItems.size === 0 ? (
+              <button
+                onClick={toggleSelectAll}
+                className='text-sm text-blue-500 hover:text-blue-600 active:text-blue-700 font-medium'
+              >
+                Select all
+              </button>
+            ) : (
+              <div className='flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-2xl'>
+                <button
+                  onClick={toggleSelectAll}
+                  className='text-sm text-blue-600 dark:text-blue-400 font-medium'
+                >
+                  {selectedItems.size === items.length ? 'Deselect all' : `${selectedItems.size} selected`}
+                </button>
+                <div className='flex-1'></div>
+                <button
+                  onClick={markSelectedAsBought}
+                  className='px-4 py-2 bg-green-500 hover:bg-green-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all'
+                >
+                  ✓ Bought
+                </button>
+                <button
+                  onClick={deleteSelectedItems}
+                  className='px-4 py-2 bg-red-500 hover:bg-red-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all'
+                >
+                  Delete
+                </button>
+              </div>
+            )}
+          </div>
+        )}
+
+        {loading ? (
+          <div className='text-center py-16'>
+            <div className='inline-block animate-spin rounded-full h-10 w-10 border-3 border-gray-300 border-t-blue-500'></div>
+          </div>
+        ) : items.length === 0 ? (
+          <div className='text-center py-16'>
+            <p className='text-lg text-gray-400 dark:text-gray-500'>No items yet</p>
+            <p className='text-sm text-gray-400 dark:text-gray-600 mt-1'>Add your first item above</p>
+          </div>
+        ) : (
+          <ul className='space-y-2'>
+            {items.map((item) => (
+              <li
+                key={item.id}
+                onClick={() => toggleSelection(item.id)}
+                className={`flex items-center gap-4 p-4 rounded-2xl cursor-pointer transition-all active:scale-[0.98] ${
+                  selectedItems.has(item.id)
+                    ? 'bg-blue-50 dark:bg-blue-900/20 shadow-sm'
+                    : 'bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800/80'}`}
+              >
+                <div
+                  className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all ${
+                    selectedItems.has(item.id)
+                      ? 'border-blue-500 bg-blue-500'
+                      : 'border-gray-300 dark:border-gray-600'
+                  }`}
+                >
+                  {selectedItems.has(item.id) && (
+                    <svg className='w-4 h-4 text-white' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
+                      <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={3} d='M5 13l4 4L19 7' />
+                    </svg>
+                  )}
+                </div>
+                <span
+                  className={`flex-1 text-base transition-all ${
+                    item.completed
+                      ? 'line-through text-gray-400 dark:text-gray-500'
+                      : 'text-gray-900 dark:text-white'
+                  }`}
+                >
+                  {item.name}
+                </span>
+                {item.completed && (
+                  <span className='px-2.5 py-1 bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs font-medium rounded-full'>
+                    Bought
+                  </span>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
     </div>
   );
