@@ -33,62 +33,32 @@ A modern PWA built with Next.js 14, Firestore, and Tailwind CSS. Ready for Verce
      NEXT_PUBLIC_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
      NEXT_PUBLIC_FIREBASE_APP_ID=your-app-id
      ```
-3. **Set up Firestore**
-   - In Firebase Console, go to Firestore Database
-   - Click "Create database" and start in test mode
-   - The `groceryItems` collection will be created automatically
-4. **Run the app**
+3. **Run the app**
    ```bash
    npm run dev
    ```
    Open [http://localhost:3000](http://localhost:3000) in your browser.
 
 ## 🚢 Deploy to Vercel
-
-1. Install Vercel CLI:
-   ```bash
-   npm i -g vercel
-   ```
-2. Deploy:
-   ```bash
-   vercel
-   ```
-3. Add environment variables in Vercel dashboard or via CLI
-
-Or use the Vercel Dashboard to import your repo and add env vars.
-
-## 📱 PWA Installation
-
-- On mobile: Add to Home Screen from browser menu
-- On desktop: Click install icon in address bar
-
+Vercel Dashboard to import your repo and add env vars.
 
 ## 📝 Scripts
-
 - `npm run dev` - Start dev server
 - `npm run build` - Build for production
 
 ## 📱 PWA Installation
-
 Once deployed, users can install the app:
 
 - **On Mobile**: Tap the browser menu and select "Add to Home Screen"
-- **On Desktop**: Click the install icon in the address bar
+- **On Desktop**: Click install icon in address bar or just click continue to browser in the footer
 
 ## 📚 Tech Stack
-
 - [Next.js 14](https://nextjs.org/) - React Framework
 - [Firebase](https://firebase.google.com/) - Backend & Database
 - [Tailwind CSS](https://tailwindcss.com/) - Styling
 - [next-pwa](https://github.com/shadowwalker/next-pwa) - PWA Support
 - [TypeScript](https://www.typescriptlang.org/) - Type Safety
 
-## 📝 Scripts
-
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm start` - Start production server
-- `npm run lint` - Run ESLint
 
 ## 🐛 Troubleshooting
 **Issue**: Firestore not working
