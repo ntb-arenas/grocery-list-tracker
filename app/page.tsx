@@ -1,4 +1,4 @@
-"use client";
+'use client';
 
 import { useState, useEffect } from 'react';
 import InstallPrompt from './components/InstallPrompt';
@@ -17,13 +17,15 @@ export default function Home() {
     setListCode,
     claiming,
     claimList,
-    addItemToActive,
+    addItemToList,
+    addItemToGlobal,
     toggleItem,
     markItems,
     deleteItems,
     getCombinedItems,
   } = useGroceryLists();
-  const [newItem, setNewItem] = useState('');
+  const [newGlobalItem, setNewGlobalItem] = useState('');
+  const [newPersonalItem, setNewPersonalItem] = useState('');
   const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
   const [shouldShowApp, setShouldShowApp] = useState(false);
   const [codeInput, setCodeInput] = useState('');
@@ -31,31 +33,46 @@ export default function Home() {
   // Check if app should be shown (PWA or bypassed install)
   useEffect(() => {
     const checkShouldShow = () => {
-      const standalone = window.matchMedia("(display-mode: standalone)").matches;
+      const standalone = window.matchMedia('(display-mode: standalone)').matches;
       const isInStandaloneMode = (window.navigator as any).standalone || standalone;
-      const hasBypassed = localStorage.getItem("bypass-install") === "true";
+      const hasBypassed = localStorage.getItem('bypass-install') === 'true';
       setShouldShowApp(isInStandaloneMode || hasBypassed);
     };
 
     checkShouldShow();
 
     // Listen for bypass-install event
-    window.addEventListener("bypass-install", checkShouldShow);
+    window.addEventListener('bypass-install', checkShouldShow);
 
     return () => {
-      window.removeEventListener("bypass-install", checkShouldShow);
+      window.removeEventListener('bypass-install', checkShouldShow);
     };
   }, []);
 
-  const addItem = async (e: React.FormEvent) => {
+  // Add to global
+  const addGlobal = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!newItem.trim()) return;
+    if (!newGlobalItem.trim()) return;
     try {
-      await addItemToActive(newItem.trim());
-      setNewItem('');
+      await addItemToGlobal(newGlobalItem.trim());
+      setNewGlobalItem('');
     } catch (err) {
       console.error(err);
-      alert('Error adding item');
+      alert('Error adding to global');
+    }
+  };
+
+  // Add to personal list (only when listCode active)
+  const addPersonal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newPersonalItem.trim()) return;
+    try {
+      if (!listCode) throw new Error('No active personal list');
+      await addItemToList(newPersonalItem.trim());
+      setNewPersonalItem('');
+    } catch (err) {
+      console.error(err);
+      alert('Error adding to personal list');
     }
   };
 
@@ -121,15 +138,9 @@ export default function Home() {
           />
           <div className='container mx-auto px-4 py-8 max-w-2xl'>
             {/* Header */}
-            <div className="mb-6">
-              <h1 className="text-4xl font-semibold tracking-tight text-slate-800 dark:text-slate-100 mb-1">
-                Groceries
-              </h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400">☁️ Synced</p>
+            <div className='mb-6'>
+              <h1 className='text-4xl font-semibold tracking-tight text-slate-800 dark:text-slate-100 mb-1'>Groceries</h1>
             </div>
-
-            {/* Add Item */}
-            <AddItemForm value={newItem} onChange={setNewItem} onSubmit={addItem} />
 
             {/* Select All & Actions */}
             {getCombinedItems().length > 0 && (
@@ -137,7 +148,7 @@ export default function Home() {
                 {selectedItems.size === 0 ? (
                   <button
                     onClick={toggleSelectAll}
-                    className="text-sm text-indigo-600 hover:text-indigo-700 active:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium"
+                    className='text-sm text-indigo-600 hover:text-indigo-700 active:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
                   >
                     Select all
                   </button>
@@ -150,7 +161,7 @@ export default function Home() {
                     {Array.from(selectedItems).some((id) => !getCombinedItems().find((item) => item.id === id)?.completed) && (
                       <button
                         onClick={markSelectedAsBought}
-                        className="px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm"
+                        className='px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm'
                       >
                         ✓ Bought
                       </button>
@@ -158,14 +169,14 @@ export default function Home() {
                     {Array.from(selectedItems).some((id) => getCombinedItems().find((item) => item.id === id)?.completed) && (
                       <button
                         onClick={markSelectedAsUnbought}
-                        className="px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm"
+                        className='px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm'
                       >
                         ↩ Unbought
                       </button>
                     )}
                     <button
                       onClick={deleteSelectedItems}
-                      className="px-4 py-2 bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm"
+                      className='px-4 py-2 bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm'
                     >
                       🗑 Delete
                     </button>
@@ -175,8 +186,8 @@ export default function Home() {
             )}
 
             {loading ? (
-              <div className="text-center py-16">
-                <div className="inline-block animate-spin rounded-full h-10 w-10 border-3 border-slate-200 border-t-indigo-500"></div>
+              <div className='text-center py-16'>
+                <div className='inline-block animate-spin rounded-full h-10 w-10 border-3 border-slate-200 border-t-indigo-500'></div>
               </div>
             ) : getCombinedItems().length === 0 ? (
               <div className='text-center py-16'>
@@ -186,26 +197,74 @@ export default function Home() {
             ) : (
               <div className='space-y-6'>
                 {/* Personal list section */}
-                {listItems.length > 0 && (
-                  <ItemsSection
-                    title={`Personal list (${listCode})`}
-                    items={listItems}
-                    selected={selectedItems}
-                    onToggleSelect={toggleSelection}
-                    onToggleComplete={toggleItemCompleted}
-                  />
+                {listCode && (
+                  <div className='p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 bg-gradient-to-br from-indigo-50/60 to-white/60 dark:from-indigo-950/30 dark:to-transparent shadow-sm'>
+                    <div className='flex items-start gap-3 mb-4'>
+                      <div>
+                        <span className='inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-indigo-600 text-white'>
+                          Personal
+                        </span>
+                        <h3 className='text-lg font-semibold text-slate-800 dark:text-slate-100 mt-2'>
+                          Personal list{listCode ? `: ${listCode}` : ''}
+                        </h3>
+                        <p className='text-xs text-slate-500 dark:text-slate-400'>
+                          Private list tied to a code. Syncs across your devices.
+                        </p>
+                      </div>
+                      <div className='ml-auto text-sm text-slate-400'>{claiming ? 'Claiming...' : ''}</div>
+                    </div>
+
+                    <form onSubmit={addPersonal} className='mb-4'>
+                      <h4 className='text-sm text-indigo-600 mb-2'>Add to Personal</h4>
+                      <AddItemForm value={newPersonalItem} onChange={setNewPersonalItem} onSubmit={addPersonal} />
+                    </form>
+
+                    {listItems.length > 0 && (
+                      <ItemsSection
+                        title={`Personal list (${listCode})`}
+                        items={listItems}
+                        selected={selectedItems}
+                        onToggleSelect={toggleSelection}
+                        onToggleComplete={toggleItemCompleted}
+                      />
+                    )}
+                  </div>
                 )}
 
                 {/* Global section */}
-                {globalItems.length > 0 && (
-                  <ItemsSection
-                    title='Global list'
-                    items={globalItems}
-                    selected={selectedItems}
-                    onToggleSelect={toggleSelection}
-                    onToggleComplete={toggleItemCompleted}
-                  />
-                )}
+                <div className='p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-emerald-50/60 to-white/60 dark:from-emerald-950/20 dark:to-transparent shadow-sm'>
+                  <div className='flex items-start gap-3 mb-4'>
+                    <div>
+                      <span className='inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-600 text-white'>
+                        Global
+                      </span>
+                      <h3 className='text-lg font-semibold text-slate-800 dark:text-slate-100 mt-2'>Global list</h3>
+                      <p className='text-xs text-slate-500 dark:text-slate-400'>Shared list visible to all users.</p>
+                    </div>
+                    <div className='ml-auto flex items-center gap-2'>
+                      {globalItems.length > 0 && (
+                        <span className='inline-flex items-center px-2 py-1 rounded-full text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'>
+                          {globalItems.length} {globalItems.length === 1 ? 'item' : 'items'}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <form onSubmit={addGlobal} className='mb-4'>
+                    <h4 className='text-sm text-emerald-600 mb-2'>Add to Global</h4>
+                    <AddItemForm value={newGlobalItem} onChange={setNewGlobalItem} onSubmit={addGlobal} />
+                  </form>
+
+                  {globalItems.length > 0 && (
+                    <ItemsSection
+                      title='Global list'
+                      items={globalItems}
+                      selected={selectedItems}
+                      onToggleSelect={toggleSelection}
+                      onToggleComplete={toggleItemCompleted}
+                    />
+                  )}
+                </div>
               </div>
             )}
           </div>
