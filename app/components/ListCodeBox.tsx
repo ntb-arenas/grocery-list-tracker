@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface Props {
   listCode: string | null;
@@ -10,9 +10,26 @@ interface Props {
   onClaim: (code: string) => void;
   onGenerate: (code: string) => void;
   onClear: () => void;
+  isOpen: boolean;
 }
 
-export default function ListCodeBox({ listCode, codeInput, setCodeInput, claiming, onClaim, onGenerate, onClear }: Props) {
+export default function ListCodeBox({ listCode, codeInput, setCodeInput, claiming, onClaim, onGenerate, onClear, isOpen }: Props) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    // Small timeout to allow the slide-over opening transition to start so focusing is visible.
+    const t = setTimeout(() => {
+      inputRef.current?.focus();
+      // also place caret at end
+      const el = inputRef.current;
+      if (el && typeof el.selectionStart === 'number') {
+        const len = el.value.length;
+        el.setSelectionRange(len, len);
+      }
+    }, 180);
+    return () => clearTimeout(t);
+  }, [isOpen]);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const code = codeInput.trim();
@@ -30,9 +47,11 @@ export default function ListCodeBox({ listCode, codeInput, setCodeInput, claimin
           </p>
           <form onSubmit={handleSubmit} className='flex gap-2'>
             <input
+              ref={inputRef}
               value={codeInput}
               onChange={(e) => setCodeInput(e.target.value)}
               placeholder='Your code or username'
+              autoFocus={false}
               className='flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl'
             />
             <button
