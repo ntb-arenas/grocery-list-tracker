@@ -137,7 +137,7 @@ export default function HomePage() {
 
       <div
         aria-hidden={isCodeOpen}
-        className='container mx-auto px-4 py-8 max-w-2xl min-h-[100svh] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'
+        className='container mx-auto px-4 py-8 max-w-2xl'
       >
         {/* Header */}
         <div className='flex items-center justify-between mb-6'>

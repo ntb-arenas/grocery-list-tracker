@@ -8,7 +8,6 @@ import AddItemForm from '@/app/components/AddItemForm';
 import ItemsSection from '@/app/components/ItemsSection';
 import useSelection from '@/lib/hooks/useSelection';
 import { getLocalStorageItem, setLocalStorageItem, removeLocalStorageItem } from '@/lib/utils/storage';
-import { checkListExists } from '@/lib/utils/syncLocalListsWithFirebase';
 
 export default function PersonalListPage({ params }: { params: Promise<{ listCode: string }> }) {
   const { listCode } = use(params);
@@ -20,7 +19,6 @@ export default function PersonalListPage({ params }: { params: Promise<{ listCod
     toggleItem,
     markItems,
     deleteItems,
-    deleteListFromFirebase,
   } = useGroceryLists(listCode);
 
   const [newPersonalItem, setNewPersonalItem] = useState('');
@@ -33,22 +31,6 @@ export default function PersonalListPage({ params }: { params: Promise<{ listCod
     selectedHasUnbought,
     selectedHasBought,
   } = useSelection();
-
-  // Check if list exists in Firebase, redirect if not
-  useEffect(() => {
-    const validateList = async () => {
-      const exists = await checkListExists(listCode);
-      if (!exists) {
-        // Remove from localStorage if it doesn't exist
-        const codes = JSON.parse(getLocalStorageItem('personalListCodes') || '[]');
-        const updated = codes.filter((c: string) => c !== listCode);
-        setLocalStorageItem('personalListCodes', JSON.stringify(updated));
-        // Redirect to homepage
-        router.push('/');
-      }
-    };
-    validateList();
-  }, [listCode, router]);
 
   const selectedPersonalIds = selectedIdsFor(listItems);
   const hasSelectedInPersonal = hasSelectedIn(listItems);

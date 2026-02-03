@@ -20,7 +20,7 @@ export default function PersonalListCard({
     <Link href={`/lists/${listCode}`} className='flex mb-2'>
       <div
         className={`flex items-center gap-4 py-3 px-4 rounded-2xl border border-indigo-100 dark:border-indigo-900/40
-        bg-gradient-to-br from-indigo-50/60 to-white/60 dark:from-indigo-950/30 dark:to-transparent shadow-sm hover:shadow-md transition-shadow`}
+        bg-gradient-to-br from-indigo-50/60 to-white/60 dark:from-indigo-950/30 dark:to-transparent shadow-sm hover:shadow-md active:shadow-lg focus:ring-2 focus:ring-indigo-300 transition-shadow`}
       >
         <div>
           <h3 className='text-lg font-semibold text-slate-800 dark:text-slate-100'>Personal list: {listCode}</h3>

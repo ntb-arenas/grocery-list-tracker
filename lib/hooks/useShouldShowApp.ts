@@ -13,10 +13,9 @@ export function useShouldShowApp() {
       const hasBypassed = getLocalStorageItem('bypass-install') === 'true';
       setShouldShowApp(isInStandaloneMode || hasBypassed);
       
-      // Mandatory 3-second loading delay
       setTimeout(() => {
         setIsLoading(false);
-      }, 3000);
+      }, 1500);
     };
 
     checkShouldShow();
