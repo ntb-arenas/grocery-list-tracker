@@ -1,0 +1,248 @@
+'use client';
+
+import { useState, useEffect } from 'react';
+import useGroceryLists from '@/lib/hooks/useGroceryLists';
+import AddItemForm from '@/app/components/AddItemForm';
+import ListCodeBox from '@/app/components/ListCodeBox';
+import ItemsSection from '@/app/components/ItemsSection';
+import useSelection from '@/lib/hooks/useSelection';
+import PersonalListCard from '@/app/components/PersonalListCard';
+
+export default function HomePage() {
+  const {
+    globalItems,
+    loading,
+    listCode,
+    setListCode,
+    claiming,
+    claimList,
+    addItemToGlobal,
+    toggleItem,
+    markItems,
+    deleteItems,
+    getCombinedItems,
+  } = useGroceryLists();
+
+  const [newGlobalItem, setNewGlobalItem] = useState('');
+  const {
+    selected: selectedItems,
+    toggleSelection,
+    toggleSelectList,
+    selectedIdsFor,
+    hasSelectedIn,
+    selectedHasUnbought,
+    selectedHasBought,
+  } = useSelection();
+
+  const [shouldShowApp, setShouldShowApp] = useState(false);
+  const [codeInput, setCodeInput] = useState('');
+  const [isCodeOpen, setIsCodeOpen] = useState(false);
+
+  // Check if app should be shown (PWA or bypassed install)
+  useEffect(() => {
+    const checkShouldShow = () => {
+      const standalone = window.matchMedia('(display-mode: standalone)').matches;
+      const isInStandaloneMode = (window.navigator as any).standalone || standalone;
+      const hasBypassed = localStorage.getItem('bypass-install') === 'true';
+      setShouldShowApp(isInStandaloneMode || hasBypassed);
+    };
+
+    checkShouldShow();
+    window.addEventListener('bypass-install', checkShouldShow);
+
+    return () => {
+      window.removeEventListener('bypass-install', checkShouldShow);
+    };
+  }, []);
+
+  // Add to global
+  const addGlobal = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newGlobalItem.trim()) return;
+    try {
+      await addItemToGlobal(newGlobalItem.trim());
+      setNewGlobalItem('');
+    } catch (err) {
+      console.error(err);
+      alert('Error adding to global');
+    }
+  };
+
+  // Selection logic
+  const toggleSelectGlobal = () => toggleSelectList(globalItems.map((i) => i.id));
+
+  const toggleItemCompleted = async (e: React.MouseEvent, combinedId: string, currentStatus: boolean) => {
+    e.stopPropagation();
+    await toggleItem(combinedId, currentStatus);
+  };
+
+  const hasSelectedInGlobal = hasSelectedIn(globalItems);
+  const selectedGlobalIds = selectedIdsFor(globalItems);
+  const selectedGlobalHasUnbought = selectedHasUnbought(globalItems);
+  const selectedGlobalHasBought = selectedHasBought(globalItems);
+
+  // Lock background scrolling when the list-code modal is open
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevDocOverflow = document.documentElement.style.overflow;
+
+    if (isCodeOpen) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevDocOverflow;
+    }
+
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevDocOverflow;
+    };
+  }, [isCodeOpen]);
+
+  if (!shouldShowApp) {
+    return null;
+  }
+
+  return (
+    <div className='h-[100dvh] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
+      {/* Modal for ListCodeBox */}
+      <div
+        className={`fixed inset-0 z-50 ${isCodeOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
+        aria-hidden={!isCodeOpen}
+      >
+        {/* Backdrop */}
+        <div
+          className={`fixed inset-0 bg-black/80 transition-opacity ${isCodeOpen ? 'opacity-100' : 'opacity-0'}`}
+          onClick={() => setIsCodeOpen(false)}
+        />
+
+        {/* Slide-over panel */}
+        <aside
+          className={`fixed left-0 bottom-0 w-full transition-transform transform ${isCodeOpen ? 'translate-y-0' : 'translate-y-full'}`}
+        >
+          <ListCodeBox
+            listCode={listCode}
+            codeInput={codeInput}
+            setCodeInput={setCodeInput}
+            claiming={claiming}
+            onClaim={(code) => claimList(code)}
+            onGenerate={(code) => {
+              setCodeInput(code);
+              claimList(code);
+            }}
+            onClear={() => {
+              localStorage.removeItem('groceryListCode');
+              setListCode(null);
+              setCodeInput('');
+            }}
+            isOpen={isCodeOpen}
+          />
+        </aside>
+      </div>
+
+      <div aria-hidden={isCodeOpen} className='container mx-auto px-4 py-8 max-w-2xl'>
+        {/* Header */}
+        <div className='flex items-center justify-between mb-6'>
+          <h1 className='text-4xl font-semibold tracking-tight text-slate-800 dark:text-slate-100 mb-1'>Groceries</h1>
+          <button
+            aria-label='Add new or open your list'
+            onClick={() => setIsCodeOpen(true)}
+            className='inline-flex items-center gap-2 px-3 py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm hover:scale-95 transition'
+          >
+            <svg
+              className='h-5 w-5'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+              aria-hidden
+            >
+              <path d='M12 5v14M5 12h14' />
+            </svg>
+            <span className='sm:inline text-sm font-medium'>Add/Open list</span>
+          </button>
+        </div>
+
+        {loading ? (
+          <div className='text-center py-16'>
+            <div className='inline-block animate-spin rounded-full h-10 w-10 border-3 border-slate-200 border-t-indigo-500'></div>
+          </div>
+        ) : getCombinedItems().length === 0 ? (
+          <div className='text-center py-16'>
+            <p className='text-lg text-slate-400 dark:text-slate-500'>No items yet</p>
+            <p className='text-sm text-slate-400 dark:text-slate-600 mt-1'>Add your first item above</p>
+          </div>
+        ) : (
+          <div className='space-y-6'>
+            {/* Personal list card */}
+            <PersonalListCard listCode={listCode} />
+
+            {/* Global section */}
+            <div className='p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-emerald-50/60 to-white/60 dark:from-emerald-950/20 dark:to-transparent shadow-sm'>
+              <div className='flex items-start gap-3 mb-4'>
+                <div>
+                  <h3 className='text-lg font-semibold text-slate-800 dark:text-slate-100'>Global list</h3>
+                  <p className='text-xs text-slate-500 dark:text-slate-400'>Shared list visible to all users.</p>
+                </div>
+              </div>
+
+              <form onSubmit={addGlobal} className='mb-4'>
+                <h4 className='text-sm text-emerald-600 mb-2'>Add to Global</h4>
+                <AddItemForm value={newGlobalItem} onChange={setNewGlobalItem} />
+              </form>
+
+              <div className='flex gap-2 mb-3'>
+                <button
+                  onClick={toggleSelectGlobal}
+                  className='text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
+                >
+                  {selectedGlobalIds.length === globalItems.length && globalItems.length > 0 ? 'Deselect' : 'Select all'}
+                </button>
+                {hasSelectedInGlobal && (
+                  <>
+                    {selectedGlobalHasUnbought && (
+                      <button
+                        onClick={async () => await markItems(selectedGlobalIds, true)}
+                        className='px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-sm'
+                      >
+                        ✓ Bought
+                      </button>
+                    )}
+                    {selectedGlobalHasBought && (
+                      <button
+                        onClick={async () => await markItems(selectedGlobalIds, false)}
+                        className='px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-sm'
+                      >
+                        ↩ Unbought
+                      </button>
+                    )}
+                    <button
+                      onClick={async () => await deleteItems(selectedGlobalIds)}
+                      className='px-3 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl text-sm'
+                    >
+                      🗑 Delete
+                    </button>
+                  </>
+                )}
+              </div>
+
+              {globalItems.length > 0 && (
+                <ItemsSection
+                  title='Global list'
+                  items={globalItems}
+                  selected={selectedItems}
+                  onToggleSelect={toggleSelection}
+                  onToggleComplete={toggleItemCompleted}
+                />
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}

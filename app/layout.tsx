@@ -1,16 +1,32 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
-import dynamic from 'next/dynamic';
-const AnimatedLayout = dynamic(() => import('./components/AnimatedLayout'), { ssr: false });
+import { AppProviders } from './providers/AppProviders';
 
 export const metadata: Metadata = {
-  title: 'Grocery List Tracker',
-  description: 'Track your grocery items with ease',
+  title: {
+    default: 'Grocery List Tracker',
+    template: '%s | Grocery List Tracker',
+  },
+  description: 'Track your grocery items with ease - Cloud synced, real-time updates',
   manifest: '/manifest.json',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
     title: 'Grocery List',
+  },
+  icons: {
+    icon: '/favicon.ico',
+    apple: '/icon-192x192.png',
+  },
+  keywords: ['grocery', 'shopping', 'list', 'tracker', 'pwa'],
+  authors: [{ name: 'Grocery List Tracker Team' }],
+  creator: 'Grocery List Tracker',
+  openGraph: {
+    type: 'website',
+    locale: 'en_US',
+    title: 'Grocery List Tracker',
+    description: 'Track your grocery items with ease',
+    siteName: 'Grocery List Tracker',
   },
 };
 
@@ -28,13 +44,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang='en'>
+    <html lang='en' suppressHydrationWarning>
       <head>
         <link rel='icon' href='/favicon.ico' />
         <link rel='apple-touch-icon' href='/icon-192x192.png' />
       </head>
       <body className='antialiased h-[100lvh] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
-        <AnimatedLayout>{children}</AnimatedLayout>
+        <AppProviders>{children}</AppProviders>
       </body>
     </html>
   );
