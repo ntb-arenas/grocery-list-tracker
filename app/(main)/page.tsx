@@ -73,24 +73,12 @@ export default function HomePage() {
 
   useEffect(() => {
     if (isCodeOpen) {
-      // Save the current scroll position
-      const scrollY = window.scrollY;
-
-      // Prevent scrolling
-      document.body.style.position = 'fixed';
-      document.body.style.top = `-${scrollY}px`;
-      document.body.style.width = '100%';
+      document.body.style.touchAction = 'none';
       document.body.style.overflow = 'hidden';
-
+      
       return () => {
-        // Restore scrolling
-        document.body.style.position = '';
-        document.body.style.top = '';
-        document.body.style.width = '';
+        document.body.style.touchAction = '';
         document.body.style.overflow = '';
-
-        // Restore scroll position
-        window.scrollTo(0, scrollY);
       };
     }
   }, [isCodeOpen]);
@@ -119,7 +107,7 @@ export default function HomePage() {
       >
         {/* Backdrop */}
         <div
-          className={`absolute inset-0 min-h-screen bg-black/80 transition-opacity ${isCodeOpen ? 'opacity-100' : 'opacity-0'}`}
+          className={`fixed inset-0 bg-black/80 transition-opacity ${isCodeOpen ? 'opacity-100' : 'opacity-0'}`}
           onClick={() => setIsCodeOpen(false)}
         />
 
