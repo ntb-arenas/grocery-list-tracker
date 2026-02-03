@@ -8,7 +8,6 @@ import ItemsSection from '@/app/components/ItemsSection';
 import useSelection from '@/lib/hooks/useSelection';
 import PersonalListCard from '@/app/components/PersonalListCard';
 import { usePersonalListsFacade } from '@/lib/hooks/usePersonalListsFacade';
-import { useShouldShowApp } from '@/lib/hooks/useShouldShowApp';
 import { syncLocalListsWithFirebase } from '@/lib/utils/syncLocalListsWithFirebase';
 
 export default function HomePage() {
@@ -23,7 +22,7 @@ export default function HomePage() {
     deleteItems,
     getCombinedItems,
   } = useGroceryLists();
-  const { personalListCodes, activeListCode, claimList, clearList } = usePersonalListsFacade();
+  const { personalListCodes, activeListCode, isInitialized, claimList, clearList } = usePersonalListsFacade();
 
   const [newGlobalItem, setNewGlobalItem] = useState('');
   const {
@@ -38,8 +37,6 @@ export default function HomePage() {
 
   const [codeInput, setCodeInput] = useState('');
   const [isCodeOpen, setIsCodeOpen] = useState(false);
-
-  const { shouldShowApp } = useShouldShowApp();
 
   // Add to global
   const addGlobal = async (e: React.FormEvent) => {
@@ -94,10 +91,6 @@ export default function HomePage() {
     clearList(code);
   };
 
-  if (!shouldShowApp) {
-    return null;
-  }
-
   return (
     <div className=''>
       {/* Modal for ListCodeBox */}
@@ -135,10 +128,7 @@ export default function HomePage() {
         </aside>
       </div>
 
-      <div
-        aria-hidden={isCodeOpen}
-        className='container mx-auto px-4 py-8 max-w-2xl'
-      >
+      <div aria-hidden={isCodeOpen} className='container mx-auto px-4 py-8 max-w-2xl'>
         {/* Header */}
         <div className='flex items-center justify-between mb-6'>
           <h1 className='text-4xl font-semibold tracking-tight text-slate-800 dark:text-slate-100 mb-1'>Groceries</h1>
@@ -163,8 +153,8 @@ export default function HomePage() {
           </button>
         </div>
 
-        {/* Render all personal lists */}
-        {personalListCodes.length > 0 && (
+        {/* Render all personal lists - only after client hydration */}
+        {isInitialized && personalListCodes.length > 0 && (
           <div className='space-y-2 mb-6'>
             {personalListCodes.map((code) => (
               <PersonalListCard

@@ -2,15 +2,26 @@ import { useState, useEffect } from 'react';
 import { getLocalStorageItem, setLocalStorageItem } from '../utils/storage';
 
 export function usePersonalListsFacade() {
-  const [personalListCodes, setPersonalListCodes] = useState<string[]>(() => {
-    const stored = getLocalStorageItem('personalListCodes');
-    return stored ? JSON.parse(stored) : [];
-  });
-  const [activeListCode, setActiveListCode] = useState<string | null>(personalListCodes[0] || null);
+  // Initialize with empty array to avoid hydration mismatch
+  const [personalListCodes, setPersonalListCodes] = useState<string[]>([]);
+  const [activeListCode, setActiveListCode] = useState<string | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
 
+  // Load from localStorage only on client after mount
   useEffect(() => {
+    const stored = getLocalStorageItem('personalListCodes');
+    const codes = stored ? JSON.parse(stored) : [];
+    setPersonalListCodes(codes);
+    setActiveListCode(codes[0] || null);
+    setIsInitialized(true);
+  }, []);
+
+  // Sync to localStorage whenever codes change (but only after initialization)
+  useEffect(() => {
+    if (isInitialized) {
       setLocalStorageItem('personalListCodes', JSON.stringify(personalListCodes));
-  }, [personalListCodes]);
+    }
+  }, [personalListCodes, isInitialized]);
 
   const claimList = (code: string) => {
     if (!personalListCodes.includes(code)) {
@@ -20,19 +31,22 @@ export function usePersonalListsFacade() {
   };
 
   const clearList = (code: string) => {
-    setPersonalListCodes((prev) => {
-      const updated = prev.filter((c) => c !== code);
-        setLocalStorageItem('personalListCodes', JSON.stringify(updated));
-      return updated;
-    });
+    setPersonalListCodes((prev) => prev.filter((c) => c !== code));
+
+    // If clearing the active list, switch to another one
     if (activeListCode === code) {
-      setActiveListCode(personalListCodes.length > 1 ? personalListCodes.find((c) => c !== code) || null : null);
+      setPersonalListCodes((prev) => {
+        const remaining = prev.filter((c) => c !== code);
+        setActiveListCode(remaining[0] || null);
+        return remaining;
+      });
     }
   };
 
   return {
     personalListCodes,
     activeListCode,
+    isInitialized,
     setActiveListCode,
     claimList,
     clearList,

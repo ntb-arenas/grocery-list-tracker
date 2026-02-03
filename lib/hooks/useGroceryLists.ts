@@ -31,33 +31,38 @@ export default function useGroceryLists(initialCode?: string) {
   const [loading, setLoading] = useState(true);
   const [claiming, setClaiming] = useState(false);
 
+  useEffect(() => {
+    setListCode(initialCode ?? null);
+  }, [initialCode]);
+
   // Firebase subscriptions
   useEffect(() => {
     setLoading(true);
     const unsubscribes: Array<() => void> = [];
 
-    // Subscribe to global items
-    const globalQuery = query(collection(db, 'groceryItems'), orderBy('createdAt', 'desc'));
-    const unsubGlobal = onSnapshot(
-      globalQuery,
-      (snapshot) => {
-        const items: GroceryItem[] = snapshot.docs.map((d) => ({
-          id: `global:${d.id}`,
-          origId: d.id,
-          collection: 'global' as const,
-          name: d.data().name,
-          completed: d.data().completed,
-          createdAt: d.data().createdAt,
-        }));
-        setGlobalItems(items);
-        setLoading(false);
-      },
-      (error) => {
-        console.error('Firestore global error:', error);
-        setLoading(false);
-      }
-    );
-    unsubscribes.push(unsubGlobal);
+    if (!listCode) {
+      const globalQuery = query(collection(db, 'groceryItems'), orderBy('createdAt', 'desc'));
+      const unsubGlobal = onSnapshot(
+        globalQuery,
+        (snapshot) => {
+          const items: GroceryItem[] = snapshot.docs.map((d) => ({
+            id: `global:${d.id}`,
+            origId: d.id,
+            collection: 'global' as const,
+            name: d.data().name,
+            completed: d.data().completed,
+            createdAt: d.data().createdAt,
+          }));
+          setGlobalItems(items);
+          setLoading(false);
+        },
+        (error) => {
+          console.error('Firestore global error:', error);
+          setLoading(false);
+        }
+      );
+      unsubscribes.push(unsubGlobal);
+    }
 
     // Subscribe to list items if we have a list code
     if (listCode) {
@@ -82,8 +87,6 @@ export default function useGroceryLists(initialCode?: string) {
         }
       );
       unsubscribes.push(unsubList);
-    } else {
-      setListItems([]);
     }
 
     return () => unsubscribes.forEach((unsub) => unsub());
@@ -187,18 +190,6 @@ export default function useGroceryLists(initialCode?: string) {
     await updateDoc(getDocRef(combinedId), { completed: !currentStatus });
   }, [getDocRef]);
 
-  // Delete a list document from Firestore
-  const deleteListFromFirebase = useCallback(async (code: string) => {
-    // Delete all items in the subcollection first
-    const itemsCol = collection(db, 'lists', code, 'items');
-    const snapshot = await getDocs(itemsCol);
-    if (!snapshot.empty) {
-      await Promise.all(snapshot.docs.map((docSnap: any) => deleteDoc(docSnap.ref)));
-    }
-    // Delete the list document itself
-    await deleteDoc(doc(db, 'lists', code));
-  }, []);
-
   // Get merged and sorted items
   const getCombinedItems = useCallback(() => {
     return [...listItems, ...globalItems].sort((a, b) => {
@@ -222,7 +213,6 @@ export default function useGroceryLists(initialCode?: string) {
     addItemToList,
     markItems,
     deleteItems,
-    deleteListFromFirebase,
     toggleItem,
     getCombinedItems,
   } as const;
