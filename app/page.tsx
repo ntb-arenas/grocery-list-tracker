@@ -109,7 +109,7 @@ export default function Home() {
       <ServiceWorkerRegistration />
       <InstallPrompt />
       {shouldShowApp && (
-        <div className='min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
+        <div className='h-[100dvh] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
           {/* Sidebar / modal for ListCodeBox */}
           <div
             className={`fixed inset-0 z-50 ${isCodeOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
@@ -123,18 +123,8 @@ export default function Home() {
 
             {/* Slide-over panel (shorter, centered vertically) */}
             <aside
-              className={`fixed left-0 bottom-0 w-full px-4 py-6 transition-transform transform ${isCodeOpen ? 'translate-y-0' : 'translate-y-full'} bg-white dark:bg-slate-900 shadow-xl rounded-t-lg h-[50%] overflow-auto`}
+              className={`fixed left-0 bottom-0 w-full transition-transform transform ${isCodeOpen ? 'translate-y-0' : 'translate-y-full'}`}
             >
-              <div className='flex items-center justify-between mb-4'>
-                <h2 className='text-lg font-semibold'>List code</h2>
-                <button
-                  aria-label='Close list code'
-                  onClick={() => setIsCodeOpen(false)}
-                  className='text-slate-500 hover:text-slate-700'
-                >
-                  ✕
-                </button>
-              </div>
               <ListCodeBox
                 listCode={listCode}
                 codeInput={codeInput}
