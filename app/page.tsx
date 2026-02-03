@@ -104,6 +104,26 @@ export default function Home() {
   const selectedGlobalHasUnbought = selectedHasUnbought(globalItems);
   const selectedGlobalHasBought = selectedHasBought(globalItems);
 
+  // Lock background scrolling when the list-code modal is open
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const prevBodyOverflow = document.body.style.overflow;
+    const prevDocOverflow = document.documentElement.style.overflow;
+
+    if (isCodeOpen) {
+      document.body.style.overflow = 'hidden';
+      document.documentElement.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevDocOverflow;
+    }
+
+    return () => {
+      document.body.style.overflow = prevBodyOverflow;
+      document.documentElement.style.overflow = prevDocOverflow;
+    };
+  }, [isCodeOpen]);
+
   return (
     <>
       <ServiceWorkerRegistration />
@@ -123,7 +143,7 @@ export default function Home() {
 
             {/* Slide-over panel (shorter, centered vertically) */}
             <aside
-              className={`fixed left-0 bottom-0 w-full transition-transform transform ${isCodeOpen ? 'translate-y-0' : 'translate-y-full'}`}
+              className={`fixed left-0 bottom-0 w-full transition-transform transform overflow-auto ${isCodeOpen ? 'translate-y-0' : 'translate-y-full'}`}
             >
               <ListCodeBox
                 listCode={listCode}
@@ -145,7 +165,7 @@ export default function Home() {
             </aside>
           </div>
 
-          <div className='container mx-auto px-4 py-8 max-w-2xl'>
+          <div aria-hidden={isCodeOpen} className='container mx-auto px-4 py-8 max-w-2xl'>
             {/* Header */}
             <div className='flex items-center justify-between mb-6'>
               <h1 className='text-4xl font-semibold tracking-tight text-slate-800 dark:text-slate-100 mb-1'>Groceries</h1>
