@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { db } from '@/lib/firebase';
 import {
   collection,
@@ -15,7 +15,7 @@ import {
 } from 'firebase/firestore';
 
 export interface GroceryItem {
-  id: string; // combined id
+  id: string;
   origId: string;
   collection: 'global' | 'list';
   name: string;
@@ -24,93 +24,114 @@ export interface GroceryItem {
 }
 
 export default function useGroceryLists(initialCode?: string) {
+  const [listCode, setListCode] = useState<string | null>(initialCode ?? null);
   const [globalItems, setGlobalItems] = useState<GroceryItem[]>([]);
   const [listItems, setListItems] = useState<GroceryItem[]>([]);
   const [loading, setLoading] = useState(true);
-  const [listCode, setListCode] = useState<string | null>(initialCode ?? null);
   const [claiming, setClaiming] = useState(false);
 
+  // Load list code from localStorage on mount
+  useEffect(() => {
+    const saved = localStorage.getItem('groceryListCode');
+    if (saved && !initialCode) {
+      setListCode(saved);
+    }
+  }, [initialCode]);
+
+  // Firebase subscriptions
   useEffect(() => {
     setLoading(true);
     const unsubscribes: Array<() => void> = [];
 
-    const qGlobal = query(collection(db, 'groceryItems'), orderBy('createdAt', 'desc'));
+    // Subscribe to global items
+    const globalQuery = query(collection(db, 'groceryItems'), orderBy('createdAt', 'desc'));
     const unsubGlobal = onSnapshot(
-      qGlobal,
+      globalQuery,
       (snapshot) => {
-        const newGlobal: GroceryItem[] = [];
-        snapshot.forEach((d) => {
-          const data: any = d.data();
-          newGlobal.push({
-            id: `global:${d.id}`,
-            origId: d.id,
-            collection: 'global',
-            name: data.name,
-            completed: data.completed,
-            createdAt: data.createdAt,
-          });
-        });
-        setGlobalItems(newGlobal);
+        const items: GroceryItem[] = snapshot.docs.map((d) => ({
+          id: `global:${d.id}`,
+          origId: d.id,
+          collection: 'global' as const,
+          name: d.data().name,
+          completed: d.data().completed,
+          createdAt: d.data().createdAt,
+        }));
+        setGlobalItems(items);
         setLoading(false);
       },
       (error) => {
-        console.error('Firestore global subscribe error', error);
+        console.error('Firestore global error:', error);
         setLoading(false);
-      },
+      }
     );
-    unsubscribes.push(() => unsubGlobal());
+    unsubscribes.push(unsubGlobal);
 
+    // Subscribe to list items if we have a list code
     if (listCode) {
-      const qList = query(collection(db, 'lists', listCode, 'items'), orderBy('createdAt', 'desc'));
+      const listQuery = query(collection(db, 'lists', listCode, 'items'), orderBy('createdAt', 'desc'));
       const unsubList = onSnapshot(
-        qList,
+        listQuery,
         (snapshot) => {
-          const newList: GroceryItem[] = [];
-          snapshot.forEach((d) => {
-            const data: any = d.data();
-            newList.push({
-              id: `list:${listCode}:${d.id}`,
-              origId: d.id,
-              collection: 'list',
-              name: data.name,
-              completed: data.completed,
-              createdAt: data.createdAt,
-            });
-          });
-          setListItems(newList);
+          const items: GroceryItem[] = snapshot.docs.map((d) => ({
+            id: `list:${listCode}:${d.id}`,
+            origId: d.id,
+            collection: 'list' as const,
+            name: d.data().name,
+            completed: d.data().completed,
+            createdAt: d.data().createdAt,
+          }));
+          setListItems(items);
           setLoading(false);
         },
         (error) => {
-          console.error('Firestore list subscribe error', error);
+          console.error('Firestore list error:', error);
           setLoading(false);
-        },
+        }
       );
-      unsubscribes.push(() => unsubList());
+      unsubscribes.push(unsubList);
+    } else {
+      setListItems([]);
     }
 
-    return () => unsubscribes.forEach((u) => u());
+    return () => unsubscribes.forEach((unsub) => unsub());
   }, [listCode]);
 
-  useEffect(() => {
-    const saved = localStorage.getItem('groceryListCode');
-    if (saved) setListCode(saved);
+  // Helper to parse combined IDs
+  const parseCombinedId = useCallback((combinedId: string) => {
+    if (combinedId.startsWith('global:')) {
+      return { type: 'global' as const, origId: combinedId.slice(7) };
+    }
+    if (combinedId.startsWith('list:')) {
+      const [, code, ...rest] = combinedId.split(':');
+      return { type: 'list' as const, listCode: code, origId: rest.join(':') };
+    }
+    return { type: 'global' as const, origId: combinedId };
   }, []);
 
-  useEffect(() => {
-    if (!listCode) setListItems([]);
-  }, [listCode]);
+  // Get Firestore document reference
+  const getDocRef = useCallback((combinedId: string) => {
+    const parsed = parseCombinedId(combinedId);
+    return parsed.type === 'global'
+      ? doc(db, 'groceryItems', parsed.origId)
+      : doc(db, 'lists', parsed.listCode, 'items', parsed.origId);
+  }, [parseCombinedId]);
 
-  function generateCode(len = 8) {
-    return Math.random().toString(36).slice(2, 2 + len).toUpperCase();
-  }
+  // Generate random list code
+  const generateCode = useCallback((length = 8) => {
+    return Math.random().toString(36).slice(2, 2 + length).toUpperCase();
+  }, []);
 
-  async function claimList(code: string, name?: string) {
+  // Claim/create a list
+  const claimList = useCallback(async (code: string, name?: string) => {
     setClaiming(true);
     try {
       const docRef = doc(db, 'lists', code);
       const snap = await getDoc(docRef);
       if (!snap.exists()) {
-        await setDoc(docRef, { name: name || code, createdAt: serverTimestamp() });
+        await setDoc(docRef, {
+          name: name || code,
+          createdAt: serverTimestamp()
+        });
       }
       localStorage.setItem('groceryListCode', code);
       setListCode(code);
@@ -120,65 +141,68 @@ export default function useGroceryLists(initialCode?: string) {
     } finally {
       setClaiming(false);
     }
-  }
+  }, []);
 
-  function parseCombinedId(combinedId: string) {
-    if (combinedId.startsWith('global:')) return { type: 'global' as const, origId: combinedId.slice('global:'.length) };
-    if (combinedId.startsWith('list:')) {
-      const parts = combinedId.split(':');
-      return { type: 'list' as const, listCode: parts[1], origId: parts.slice(2).join(':') };
-    }
-    return { type: 'global' as const, origId: combinedId };
-  }
-
-  function getDocRefForCombinedId(combinedId: string) {
-    const p = parseCombinedId(combinedId);
-    if (p.type === 'global') return doc(db, 'groceryItems', p.origId);
-    return doc(db, 'lists', p.listCode!, 'items', p.origId);
-  }
-
-  async function addItemToActive(text: string) {
+  // Add item to currently active collection (list or global)
+  const addItemToActive = useCallback(async (text: string) => {
     if (!text.trim()) return;
-    if (listCode) {
-      await addDoc(collection(db, 'lists', listCode, 'items'), { name: text, completed: false, createdAt: serverTimestamp() });
-    } else {
-      await addDoc(collection(db, 'groceryItems'), { name: text, completed: false, createdAt: serverTimestamp() });
-    }
-  }
-
-  // Explicit helpers: add to global or add to current personal list
-  async function addItemToGlobal(text: string) {
-    if (!text.trim()) return;
-    await addDoc(collection(db, 'groceryItems'), { name: text, completed: false, createdAt: serverTimestamp() });
-  }
-
-  async function addItemToList(text: string) {
-    if (!text.trim()) return;
-    if (!listCode) throw new Error('No active list code');
-    await addDoc(collection(db, 'lists', listCode, 'items'), { name: text, completed: false, createdAt: serverTimestamp() });
-  }
-
-  async function markItems(combinedIds: string[], completed: boolean) {
-    await Promise.all(combinedIds.map((id) => updateDoc(getDocRefForCombinedId(id), { completed })));
-  }
-
-  async function deleteItems(combinedIds: string[]) {
-    await Promise.all(combinedIds.map((id) => deleteDoc(getDocRefForCombinedId(id))));
-  }
-
-  async function toggleItem(combinedId: string, currentStatus: boolean) {
-    await updateDoc(getDocRefForCombinedId(combinedId), { completed: !currentStatus });
-  }
-
-  function getCombinedItems() {
-    const merged = [...listItems, ...globalItems];
-    merged.sort((a, b) => {
-      const at = a.createdAt?.seconds ?? a.createdAt ?? 0;
-      const bt = b.createdAt?.seconds ?? b.createdAt ?? 0;
-      return bt - at;
+    const targetCollection = listCode
+      ? collection(db, 'lists', listCode, 'items')
+      : collection(db, 'groceryItems');
+    await addDoc(targetCollection, {
+      name: text.trim(),
+      completed: false,
+      createdAt: serverTimestamp()
     });
-    return merged;
-  }
+  }, [listCode]);
+
+  // Explicit add to global
+  const addItemToGlobal = useCallback(async (text: string) => {
+    if (!text.trim()) return;
+    await addDoc(collection(db, 'groceryItems'), {
+      name: text.trim(),
+      completed: false,
+      createdAt: serverTimestamp()
+    });
+  }, []);
+
+  // Explicit add to list
+  const addItemToList = useCallback(async (text: string) => {
+    if (!text.trim() || !listCode) return;
+    await addDoc(collection(db, 'lists', listCode, 'items'), {
+      name: text.trim(),
+      completed: false,
+      createdAt: serverTimestamp()
+    });
+  }, [listCode]);
+
+  // Batch mark items
+  const markItems = useCallback(async (combinedIds: string[], completed: boolean) => {
+    await Promise.all(
+      combinedIds.map((id) => updateDoc(getDocRef(id), { completed }))
+    );
+  }, [getDocRef]);
+
+  // Batch delete items
+  const deleteItems = useCallback(async (combinedIds: string[]) => {
+    await Promise.all(
+      combinedIds.map((id) => deleteDoc(getDocRef(id)))
+    );
+  }, [getDocRef]);
+
+  // Toggle single item
+  const toggleItem = useCallback(async (combinedId: string, currentStatus: boolean) => {
+    await updateDoc(getDocRef(combinedId), { completed: !currentStatus });
+  }, [getDocRef]);
+
+  // Get merged and sorted items
+  const getCombinedItems = useCallback(() => {
+    return [...listItems, ...globalItems].sort((a, b) => {
+      const timeA = a.createdAt?.seconds ?? 0;
+      const timeB = b.createdAt?.seconds ?? 0;
+      return timeB - timeA;
+    });
+  }, [listItems, globalItems]);
 
   return {
     globalItems,
