@@ -7,6 +7,7 @@ import useGroceryLists from '@/lib/hooks/useGroceryLists';
 import AddItemForm from '@/app/components/AddItemForm';
 import ItemsSection from '@/app/components/ItemsSection';
 import useSelection from '@/lib/hooks/useSelection';
+import { getLocalStorageItem, setLocalStorageItem, removeLocalStorageItem } from '@/lib/utils/storage';
 
 export default function PersonalListPage({ params }: { params: Promise<{ listCode: string }> }) {
   const { listCode } = use(params);
@@ -46,11 +47,11 @@ export default function PersonalListPage({ params }: { params: Promise<{ listCod
   const handleDeleteList = async () => {
     try {
       await deleteListFromFirebase(activeListCode!);
-      const codes = JSON.parse(localStorage.getItem('personalListCodes') || '[]');
+      const codes = JSON.parse(getLocalStorageItem('personalListCodes') || '[]');
       const updated = codes.filter((c: string) => c !== activeListCode);
-      localStorage.setItem('personalListCodes', JSON.stringify(updated));
-      if (localStorage.getItem('groceryListCode') === activeListCode) {
-        localStorage.removeItem('groceryListCode');
+      setLocalStorageItem('personalListCodes', JSON.stringify(updated));
+      if (getLocalStorageItem('groceryListCode') === activeListCode) {
+        removeLocalStorageItem('groceryListCode');
       }
       router.push('/');
     } catch {

@@ -1,14 +1,15 @@
 import { useState, useEffect } from 'react';
+import { getLocalStorageItem, setLocalStorageItem } from '../utils/storage';
 
 export function usePersonalListsFacade() {
   const [personalListCodes, setPersonalListCodes] = useState<string[]>(() => {
-    const stored = localStorage.getItem('personalListCodes');
+    const stored = getLocalStorageItem('personalListCodes');
     return stored ? JSON.parse(stored) : [];
   });
   const [activeListCode, setActiveListCode] = useState<string | null>(personalListCodes[0] || null);
 
   useEffect(() => {
-    localStorage.setItem('personalListCodes', JSON.stringify(personalListCodes));
+      setLocalStorageItem('personalListCodes', JSON.stringify(personalListCodes));
   }, [personalListCodes]);
 
   const claimList = (code: string) => {
@@ -21,7 +22,7 @@ export function usePersonalListsFacade() {
   const clearList = (code: string) => {
     setPersonalListCodes((prev) => {
       const updated = prev.filter((c) => c !== code);
-      localStorage.setItem('personalListCodes', JSON.stringify(updated));
+        setLocalStorageItem('personalListCodes', JSON.stringify(updated));
       return updated;
     });
     if (activeListCode === code) {

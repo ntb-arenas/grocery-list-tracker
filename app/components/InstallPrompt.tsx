@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useShouldShowApp } from '@/lib/hooks/useShouldShowApp';
+import { setLocalStorageItem } from '@/lib/utils/storage';
 
 export default function InstallPrompt() {
   const isStandalone = useShouldShowApp();
@@ -42,7 +43,7 @@ export default function InstallPrompt() {
   };
 
   const handleBypassInstall = () => {
-    localStorage.setItem('bypass-install', 'true');
+    setLocalStorageItem('bypass-install', 'true');
     // Dispatch custom event to notify parent component
     window.dispatchEvent(new Event('bypass-install'));
   };
