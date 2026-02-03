@@ -5,12 +5,11 @@ import React from 'react';
 interface Props {
   value: string;
   onChange: (v: string) => void;
-  onSubmit: (e: React.FormEvent) => void;
 }
 
-export default function AddItemForm({ value, onChange, onSubmit }: Props) {
+export default function AddItemForm({ value, onChange }: Props) {
   return (
-    <form onSubmit={onSubmit} className='mb-6'>
+    <div className='mb-6'>
       <div className='relative'>
         <input
           type='text'
@@ -26,6 +25,6 @@ export default function AddItemForm({ value, onChange, onSubmit }: Props) {
           +
         </button>
       </div>
-    </form>
+    </div>
   );
 }
