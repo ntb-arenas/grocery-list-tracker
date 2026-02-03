@@ -7,21 +7,22 @@ import ListCodeBox from '@/app/components/ListCodeBox';
 import ItemsSection from '@/app/components/ItemsSection';
 import useSelection from '@/lib/hooks/useSelection';
 import PersonalListCard from '@/app/components/PersonalListCard';
+import { usePersonalListsFacade } from '@/lib/hooks/usePersonalListsFacade';
+import { useShouldShowApp } from '@/lib/hooks/useShouldShowApp';
 
 export default function HomePage() {
   const {
     globalItems,
     loading,
-    listCode,
-    setListCode,
     claiming,
-    claimList,
+    claimList: claimListFirebase,
     addItemToGlobal,
     toggleItem,
     markItems,
     deleteItems,
     getCombinedItems,
   } = useGroceryLists();
+  const { personalListCodes, activeListCode, claimList, clearList } = usePersonalListsFacade();
 
   const [newGlobalItem, setNewGlobalItem] = useState('');
   const {
@@ -34,26 +35,10 @@ export default function HomePage() {
     selectedHasBought,
   } = useSelection();
 
-  const [shouldShowApp, setShouldShowApp] = useState(false);
   const [codeInput, setCodeInput] = useState('');
   const [isCodeOpen, setIsCodeOpen] = useState(false);
 
-  // Check if app should be shown (PWA or bypassed install)
-  useEffect(() => {
-    const checkShouldShow = () => {
-      const standalone = window.matchMedia('(display-mode: standalone)').matches;
-      const isInStandaloneMode = (window.navigator as any).standalone || standalone;
-      const hasBypassed = localStorage.getItem('bypass-install') === 'true';
-      setShouldShowApp(isInStandaloneMode || hasBypassed);
-    };
-
-    checkShouldShow();
-    window.addEventListener('bypass-install', checkShouldShow);
-
-    return () => {
-      window.removeEventListener('bypass-install', checkShouldShow);
-    };
-  }, []);
+  const shouldShowApp = useShouldShowApp();
 
   // Add to global
   const addGlobal = async (e: React.FormEvent) => {
@@ -101,12 +86,22 @@ export default function HomePage() {
     };
   }, [isCodeOpen]);
 
+  // List code modal logic
+  const handleClaimList = (code: string) => {
+    claimListFirebase(code);
+    claimList(code);
+  };
+
+  const handleClearList = (code: string) => {
+    clearList(code);
+  };
+
   if (!shouldShowApp) {
     return null;
   }
 
   return (
-    <div className='h-[100dvh] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
+    <div className='h-[100svh] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
       {/* Modal for ListCodeBox */}
       <div
         className={`fixed inset-0 z-50 ${isCodeOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
@@ -123,18 +118,17 @@ export default function HomePage() {
           className={`fixed left-0 bottom-0 w-full transition-transform transform ${isCodeOpen ? 'translate-y-0' : 'translate-y-full'}`}
         >
           <ListCodeBox
-            listCode={listCode}
+            listCode={activeListCode}
             codeInput={codeInput}
             setCodeInput={setCodeInput}
             claiming={claiming}
-            onClaim={(code) => claimList(code)}
+            onClaim={handleClaimList}
             onGenerate={(code) => {
               setCodeInput(code);
-              claimList(code);
+              handleClaimList(code);
             }}
             onClear={() => {
-              localStorage.removeItem('groceryListCode');
-              setListCode(null);
+              if (activeListCode) handleClearList(activeListCode);
               setCodeInput('');
             }}
             isOpen={isCodeOpen}
@@ -149,10 +143,10 @@ export default function HomePage() {
           <button
             aria-label='Add new or open your list'
             onClick={() => setIsCodeOpen(true)}
-            className='inline-flex items-center gap-2 px-3 py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm hover:scale-95 transition'
+            className='inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 text-slate-800 dark:text-slate-100 rounded-full shadow hover:shadow-md hover:bg-slate-300 transition-all border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 text-base font-medium'
           >
             <svg
-              className='h-5 w-5'
+              className='h-5 w-5 text-indigo-500 dark:text-indigo-300'
               viewBox='0 0 24 24'
               fill='none'
               stroke='currentColor'
@@ -163,9 +157,23 @@ export default function HomePage() {
             >
               <path d='M12 5v14M5 12h14' />
             </svg>
-            <span className='sm:inline text-sm font-medium'>Add/Open list</span>
+            <span>Add/Open list</span>
           </button>
         </div>
+
+        {/* Render all personal lists */}
+        {personalListCodes.length > 0 && (
+          <div className='space-y-2 mb-6'>
+            {personalListCodes.map((code) => (
+              <PersonalListCard
+                key={code}
+                listCode={code}
+                isActive={code === activeListCode}
+                onClear={() => handleClearList(code)}
+              />
+            ))}
+          </div>
+        )}
 
         {loading ? (
           <div className='text-center py-16'>
@@ -178,9 +186,6 @@ export default function HomePage() {
           </div>
         ) : (
           <div className='space-y-6'>
-            {/* Personal list card */}
-            <PersonalListCard listCode={listCode} />
-
             {/* Global section */}
             <div className='p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-emerald-50/60 to-white/60 dark:from-emerald-950/20 dark:to-transparent shadow-sm'>
               <div className='flex items-start gap-3 mb-4'>
@@ -191,17 +196,18 @@ export default function HomePage() {
               </div>
 
               <form onSubmit={addGlobal} className='mb-4'>
-                <h4 className='text-sm text-emerald-600 mb-2'>Add to Global</h4>
                 <AddItemForm value={newGlobalItem} onChange={setNewGlobalItem} />
               </form>
 
               <div className='flex gap-2 mb-3'>
-                <button
-                  onClick={toggleSelectGlobal}
-                  className='text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
-                >
-                  {selectedGlobalIds.length === globalItems.length && globalItems.length > 0 ? 'Deselect' : 'Select all'}
-                </button>
+                {globalItems.length > 0 && (
+                  <button
+                    onClick={toggleSelectGlobal}
+                    className='text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
+                  >
+                    {selectedGlobalIds.length === globalItems.length ? 'Deselect' : 'Select all'}
+                  </button>
+                )}
                 {hasSelectedInGlobal && (
                   <>
                     {selectedGlobalHasUnbought && (
@@ -232,7 +238,6 @@ export default function HomePage() {
 
               {globalItems.length > 0 && (
                 <ItemsSection
-                  title='Global list'
                   items={globalItems}
                   selected={selectedItems}
                   onToggleSelect={toggleSelection}

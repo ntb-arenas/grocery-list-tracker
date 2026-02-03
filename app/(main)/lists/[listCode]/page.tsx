@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState, use } from 'react';
+import { useRouter } from 'next/navigation';
 import useGroceryLists from '@/lib/hooks/useGroceryLists';
 import AddItemForm from '@/app/components/AddItemForm';
 import ItemsSection from '@/app/components/ItemsSection';
@@ -9,7 +10,16 @@ import useSelection from '@/lib/hooks/useSelection';
 
 export default function PersonalListPage({ params }: { params: Promise<{ listCode: string }> }) {
   const { listCode } = use(params);
-  const { listItems, listCode: activeListCode, addItemToList, toggleItem, markItems, deleteItems } = useGroceryLists(listCode);
+  const router = useRouter();
+  const {
+    listItems,
+    listCode: activeListCode,
+    addItemToList,
+    toggleItem,
+    markItems,
+    deleteItems,
+    deleteListFromFirebase,
+  } = useGroceryLists(listCode);
 
   const [newPersonalItem, setNewPersonalItem] = useState('');
   const {
@@ -22,18 +32,29 @@ export default function PersonalListPage({ params }: { params: Promise<{ listCod
     selectedHasBought,
   } = useSelection();
 
-  const toggleSelectPersonal = () => toggleSelectList(listItems.map((i) => i.id));
+  const selectedPersonalIds = selectedIdsFor(listItems);
+  const hasSelectedInPersonal = hasSelectedIn(listItems);
+  const selectedPersonalHasUnbought = selectedHasUnbought(listItems);
+  const selectedPersonalHasBought = selectedHasBought(listItems);
 
-  const addPersonal = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newPersonalItem.trim()) return;
+  const handleMark = async (completed: boolean) => {
+    await markItems(selectedPersonalIds, completed);
+  };
+  const handleDeleteSelected = async () => {
+    await deleteItems(selectedPersonalIds);
+  };
+  const handleDeleteList = async () => {
     try {
-      if (!activeListCode) throw new Error('No active personal list');
-      await addItemToList(newPersonalItem.trim());
-      setNewPersonalItem('');
-    } catch (err) {
-      console.error(err);
-      alert('Error adding to personal list');
+      await deleteListFromFirebase(activeListCode!);
+      const codes = JSON.parse(localStorage.getItem('personalListCodes') || '[]');
+      const updated = codes.filter((c: string) => c !== activeListCode);
+      localStorage.setItem('personalListCodes', JSON.stringify(updated));
+      if (localStorage.getItem('groceryListCode') === activeListCode) {
+        localStorage.removeItem('groceryListCode');
+      }
+      router.push('/');
+    } catch {
+      alert('Failed to delete list');
     }
   };
 
@@ -41,11 +62,6 @@ export default function PersonalListPage({ params }: { params: Promise<{ listCod
     e.stopPropagation();
     await toggleItem(combinedId, currentStatus);
   };
-
-  const hasSelectedInPersonal = hasSelectedIn(listItems);
-  const selectedPersonalIds = selectedIdsFor(listItems);
-  const selectedPersonalHasUnbought = selectedHasUnbought(listItems);
-  const selectedPersonalHasBought = selectedHasBought(listItems);
 
   return (
     <div className='container mx-auto px-4 py-8 max-w-2xl'>
@@ -58,7 +74,6 @@ export default function PersonalListPage({ params }: { params: Promise<{ listCod
           Back
         </Link>
       </div>
-
       {!activeListCode ? (
         <div className='text-center py-16'>
           <p className='text-lg text-slate-400 dark:text-slate-500'>No active personal list</p>
@@ -68,24 +83,32 @@ export default function PersonalListPage({ params }: { params: Promise<{ listCod
         </div>
       ) : (
         <div>
-          <form onSubmit={addPersonal} className='mb-4'>
-            <h4 className='text-sm text-indigo-600 mb-2'>Add to Personal</h4>
+          <form
+            onSubmit={async (e) => {
+              e.preventDefault();
+              if (!newPersonalItem.trim()) return;
+              await addItemToList(newPersonalItem.trim());
+              setNewPersonalItem('');
+            }}
+            className='mb-4'
+          >
             <AddItemForm value={newPersonalItem} onChange={setNewPersonalItem} />
           </form>
-
           <div className='flex gap-2 mb-3'>
-            <button
-              onClick={toggleSelectPersonal}
-              className='text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
-            >
-              {selectedPersonalIds.length === listItems.length && listItems.length > 0 ? 'Deselect' : 'Select all'}
-            </button>
+            {listItems.length > 0 && (
+              <button
+                onClick={() => toggleSelectList(listItems.map((i) => i.id))}
+                className='text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
+              >
+                {selectedPersonalIds.length === listItems.length ? 'Deselect' : 'Select all'}
+              </button>
+            )}
             <div className='text-sm text-slate-400'>{/* placeholder for claiming state */}</div>
             {hasSelectedInPersonal && (
               <>
                 {selectedPersonalHasUnbought && (
                   <button
-                    onClick={async () => await markItems(selectedPersonalIds, true)}
+                    onClick={() => handleMark(true)}
                     className='px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-sm'
                   >
                     ✓ Bought
@@ -93,14 +116,14 @@ export default function PersonalListPage({ params }: { params: Promise<{ listCod
                 )}
                 {selectedPersonalHasBought && (
                   <button
-                    onClick={async () => await markItems(selectedPersonalIds, false)}
+                    onClick={() => handleMark(false)}
                     className='px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-sm'
                   >
                     ↩ Unbought
                   </button>
                 )}
                 <button
-                  onClick={async () => await deleteItems(selectedPersonalIds)}
+                  onClick={handleDeleteSelected}
                   className='px-3 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl text-sm'
                 >
                   🗑 Delete
@@ -108,7 +131,6 @@ export default function PersonalListPage({ params }: { params: Promise<{ listCod
               </>
             )}
           </div>
-
           {listItems.length > 0 && (
             <ItemsSection
               title={`Personal list (${activeListCode})`}
@@ -117,6 +139,31 @@ export default function PersonalListPage({ params }: { params: Promise<{ listCod
               onToggleSelect={toggleSelection}
               onToggleComplete={toggleItemCompleted}
             />
+          )}
+          {activeListCode && (
+            <div className='mt-8 flex justify-center'>
+              <button
+                onClick={handleDeleteList}
+                className='inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-rose-100 to-rose-200 dark:from-rose-900 dark:to-rose-800 text-rose-700 dark:text-rose-200 rounded-full shadow hover:shadow-md hover:bg-rose-300 transition-all border border-rose-200 dark:border-rose-900 focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 text-base font-medium'
+              >
+                <svg
+                  className='h-5 w-5 text-rose-500 dark:text-rose-300'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2'
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  aria-hidden
+                >
+                  <path d='M3 6h18' />
+                  <path d='M8 6v14h8V6' />
+                  <path d='M10 11v6' />
+                  <path d='M14 11v6' />
+                </svg>
+                <span>Delete this list</span>
+              </button>
+            </div>
           )}
         </div>
       )}

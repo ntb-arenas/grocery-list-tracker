@@ -4,7 +4,7 @@ import React from 'react';
 import { GroceryItem } from '@/lib/hooks/useGroceryLists';
 
 interface Props {
-  title: string;
+  title?: string;
   items: GroceryItem[];
   selected: Set<string>;
   onToggleSelect: (id: string) => void;

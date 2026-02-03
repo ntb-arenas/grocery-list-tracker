@@ -4,7 +4,15 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 
-export default function PersonalListCard({ listCode }: { listCode: string | null }) {
+export default function PersonalListCard({
+  listCode,
+  isActive,
+  onClear,
+}: {
+  listCode: string;
+  isActive: boolean;
+  onClear: () => void;
+}) {
   const router = useRouter();
 
   useEffect(() => {
@@ -17,9 +25,12 @@ export default function PersonalListCard({ listCode }: { listCode: string | null
   if (!listCode) return null;
 
   return (
-    <Link href={`/lists/${listCode}`} className='block' onMouseEnter={() => router.prefetch(`/lists/${listCode}`)}>
-      <div className='p-3 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 bg-gradient-to-br from-indigo-50/60 to-white/60 dark:from-indigo-950/30 dark:to-transparent shadow-sm flex items-center gap-3 hover:shadow-md transition-shadow'>
-        <div className='flex-1'>
+    <Link href={`/lists/${listCode}`} className='flex mb-2' onMouseEnter={() => router.prefetch(`/lists/${listCode}`)}>
+      <div
+        className={`flex items-center gap-4 py-3 px-4 rounded-2xl border border-indigo-100 dark:border-indigo-900/40
+        bg-gradient-to-br from-indigo-50/60 to-white/60 dark:from-indigo-950/30 dark:to-transparent shadow-sm hover:shadow-md transition-shadow`}
+      >
+        <div>
           <h3 className='text-lg font-semibold text-slate-800 dark:text-slate-100'>Personal list: {listCode}</h3>
           <p className='text-xs text-slate-500 dark:text-slate-400'>
             Private list tied to a code. Open the dedicated page to manage it.

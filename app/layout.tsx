@@ -49,7 +49,7 @@ export default function RootLayout({
         <link rel='icon' href='/favicon.ico' />
         <link rel='apple-touch-icon' href='/icon-192x192.png' />
       </head>
-      <body className='antialiased h-[100lvh] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
+      <body className='antialiased h-[100svh] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
