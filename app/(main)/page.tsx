@@ -119,13 +119,13 @@ export default function HomePage() {
       >
         {/* Backdrop */}
         <div
-          className={`fixed inset-0 bg-black/80 transition-opacity ${isCodeOpen ? 'opacity-100' : 'opacity-0'}`}
+          className={`absolute inset-0 min-h-screen bg-black/80 transition-opacity ${isCodeOpen ? 'opacity-100' : 'opacity-0'}`}
           onClick={() => setIsCodeOpen(false)}
         />
 
         {/* Slide-over panel */}
         <aside
-          className={`fixed left-0 w-full transition-transform transform ${isCodeOpen ? 'translate-y-0' : 'translate-y-full'}`}
+          className={`fixed left-0 bottom-0 w-full transition-transform transform ${isCodeOpen ? 'translate-y-0' : 'translate-y-full'}`}
         >
           <ListCodeBox
             listCode={activeListCode}
