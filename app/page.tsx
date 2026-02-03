@@ -8,6 +8,8 @@ import AddItemForm from './components/AddItemForm';
 import ListCodeBox from './components/ListCodeBox';
 import ItemsSection from './components/ItemsSection';
 import useSelection from '@/lib/hooks/useSelection';
+import Link from 'next/link';
+import PersonalListCard from './components/PersonalListCard';
 
 export default function Home() {
   const {
@@ -87,7 +89,6 @@ export default function Home() {
   };
 
   // Selection logic
-  const toggleSelectPersonal = () => toggleSelectList(listItems.map((i) => i.id));
   const toggleSelectGlobal = () => toggleSelectList(globalItems.map((i) => i.id));
 
   const toggleItemCompleted = async (e: React.MouseEvent, combinedId: string, currentStatus: boolean) => {
@@ -95,12 +96,8 @@ export default function Home() {
     await toggleItem(combinedId, currentStatus);
   };
 
-  const hasSelectedInPersonal = hasSelectedIn(listItems);
   const hasSelectedInGlobal = hasSelectedIn(globalItems);
-  const selectedPersonalIds = selectedIdsFor(listItems);
   const selectedGlobalIds = selectedIdsFor(globalItems);
-  const selectedPersonalHasUnbought = selectedHasUnbought(listItems);
-  const selectedPersonalHasBought = selectedHasBought(listItems);
   const selectedGlobalHasUnbought = selectedHasUnbought(globalItems);
   const selectedGlobalHasBought = selectedHasBought(globalItems);
 
@@ -202,72 +199,8 @@ export default function Home() {
               </div>
             ) : (
               <div className='space-y-6'>
-                {/* Personal list section */}
-                {listCode && (
-                  <div className='p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 bg-gradient-to-br from-indigo-50/60 to-white/60 dark:from-indigo-950/30 dark:to-transparent shadow-sm'>
-                    <div className='flex items-start gap-3 mb-4'>
-                      <div>
-                        <h3 className='text-lg font-semibold text-slate-800 dark:text-slate-100'>
-                          Personal list{listCode ? `: ${listCode}` : ''}
-                        </h3>
-                        <p className='text-xs text-slate-500 dark:text-slate-400'>
-                          Private list tied to a code. Syncs across your devices.
-                        </p>
-                      </div>
-                    </div>
-
-                    <form onSubmit={addPersonal} className='mb-4'>
-                      <h4 className='text-sm text-indigo-600 mb-2'>Add to Personal</h4>
-                      <AddItemForm value={newPersonalItem} onChange={setNewPersonalItem} />
-                    </form>
-
-                    <div className='flex gap-2 mb-3'>
-                      <button
-                        onClick={toggleSelectPersonal}
-                        className='text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
-                      >
-                        {selectedPersonalIds.length === listItems.length && listItems.length > 0 ? 'Deselect' : 'Select all'}
-                      </button>
-                      <div className='text-sm text-slate-400'>{claiming ? 'Claiming...' : ''}</div>
-                      {hasSelectedInPersonal && (
-                        <>
-                          {selectedPersonalHasUnbought && (
-                            <button
-                              onClick={async () => await markItems(selectedPersonalIds, true)}
-                              className='px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-sm'
-                            >
-                              ✓ Bought
-                            </button>
-                          )}
-                          {selectedPersonalHasBought && (
-                            <button
-                              onClick={async () => await markItems(selectedPersonalIds, false)}
-                              className='px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-sm'
-                            >
-                              ↩ Unbought
-                            </button>
-                          )}
-                          <button
-                            onClick={async () => await deleteItems(selectedPersonalIds)}
-                            className='px-3 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl text-sm'
-                          >
-                            🗑 Delete
-                          </button>
-                        </>
-                      )}
-                    </div>
-
-                    {listItems.length > 0 && (
-                      <ItemsSection
-                        title={`Personal list (${listCode})`}
-                        items={listItems}
-                        selected={selectedItems}
-                        onToggleSelect={toggleSelection}
-                        onToggleComplete={toggleItemCompleted}
-                      />
-                    )}
-                  </div>
-                )}
+                {/* Personal list moved to its own page. Show a compact card with a link when a personal list exists */}
+                <PersonalListCard listCode={listCode} />
 
                 {/* Global section */}
                 <div className='p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-emerald-50/60 to-white/60 dark:from-emerald-950/20 dark:to-transparent shadow-sm'>

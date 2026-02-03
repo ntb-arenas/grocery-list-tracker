@@ -1,5 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
+import dynamic from 'next/dynamic';
+const AnimatedLayout = dynamic(() => import('./components/AnimatedLayout'), { ssr: false });
 
 export const metadata: Metadata = {
   title: 'Grocery List Tracker',
@@ -31,7 +33,9 @@ export default function RootLayout({
         <link rel='icon' href='/favicon.ico' />
         <link rel='apple-touch-icon' href='/icon-192x192.png' />
       </head>
-      <body className='antialiased'>{children}</body>
+      <body className='antialiased h-[100lvh] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
+        <AnimatedLayout>{children}</AnimatedLayout>
+      </body>
     </html>
   );
 }
