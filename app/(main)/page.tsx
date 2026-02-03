@@ -87,15 +87,15 @@ export default function HomePage() {
     };
   }, [isCodeOpen]);
 
-
   useEffect(() => {
     syncLocalListsWithFirebase();
   }, []);
 
   // List code modal logic
-  const handleClaimList = (code: string) => {
-    claimListFirebase(code);
+  const handleClaimList = async (code: string) => {
+    await claimListFirebase(code);
     claimList(code);
+    setIsCodeOpen(false);
   };
 
   const handleClearList = (code: string) => {

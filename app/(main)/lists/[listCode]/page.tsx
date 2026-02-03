@@ -61,19 +61,12 @@ export default function PersonalListPage({ params }: { params: Promise<{ listCod
   const handleDeleteSelected = async () => {
     await deleteItems(selectedPersonalIds);
   };
-  const handleDeleteList = async () => {
-    try {
-      await deleteListFromFirebase(activeListCode!);
-      const codes = JSON.parse(getLocalStorageItem('personalListCodes') || '[]');
-      const updated = codes.filter((c: string) => c !== activeListCode);
-      setLocalStorageItem('personalListCodes', JSON.stringify(updated));
-      if (getLocalStorageItem('groceryListCode') === activeListCode) {
-        removeLocalStorageItem('groceryListCode');
-      }
-      router.push('/');
-    } catch {
-      alert('Failed to delete list');
-    }
+  const handleDeleteList = () => {
+    // Only remove from localStorage, not from Firebase
+    const codes = JSON.parse(getLocalStorageItem('personalListCodes') || '[]');
+    const updated = codes.filter((c: string) => c !== activeListCode);
+    setLocalStorageItem('personalListCodes', JSON.stringify(updated));
+    router.push('/');
   };
 
   const toggleItemCompleted = async (e: React.MouseEvent, combinedId: string, currentStatus: boolean) => {
@@ -159,7 +152,7 @@ export default function PersonalListPage({ params }: { params: Promise<{ listCod
             />
           )}
           {activeListCode && (
-            <div className='mt-8 flex justify-center'>
+            <div className='mt-[5rem] flex justify-center'>
               <button
                 onClick={handleDeleteList}
                 className='inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-rose-100 to-rose-200 dark:from-rose-900 dark:to-rose-800 text-rose-700 dark:text-rose-200 rounded-full shadow hover:shadow-md hover:bg-rose-300 transition-all border border-rose-200 dark:border-rose-900 focus:outline-none focus:ring-2 focus:ring-rose-400 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 text-base font-medium'

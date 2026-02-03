@@ -9,7 +9,7 @@ import { collection, getDocs, doc, getDoc } from 'firebase/firestore';
  */
 export async function checkListExists(listCode: string): Promise<boolean> {
   try {
-    const listRef = doc(db, 'groceryLists', listCode);
+    const listRef = doc(db, 'lists', listCode);
     const listSnap = await getDoc(listRef);
     return listSnap.exists();
   } catch (error) {
@@ -26,12 +26,12 @@ export async function syncLocalListsWithFirebase(): Promise<void> {
   try {
     const stored = getLocalStorageItem('personalListCodes');
     if (!stored) return;
-    
+
     const codes: string[] = JSON.parse(stored);
     if (!codes.length) return;
 
     // Fetch all list codes from Firebase
-    const firebaseListsSnap = await getDocs(collection(db, 'groceryLists'));
+    const firebaseListsSnap = await getDocs(collection(db, 'lists'));
     const firebaseCodes = new Set<string>();
     firebaseListsSnap.forEach((doc) => {
       firebaseCodes.add(doc.id);
