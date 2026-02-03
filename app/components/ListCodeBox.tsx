@@ -1,6 +1,6 @@
 'use client';
 
-import React from 'react';
+import React, { useEffect, useRef } from 'react';
 
 interface Props {
   listCode: string | null;
@@ -10,9 +10,16 @@ interface Props {
   onClaim: (code: string) => void;
   onGenerate: (code: string) => void;
   onClear: () => void;
+  isOpen: boolean;
 }
 
-export default function ListCodeBox({ listCode, codeInput, setCodeInput, claiming, onClaim, onGenerate, onClear }: Props) {
+export default function ListCodeBox({ listCode, codeInput, setCodeInput, claiming, onClaim, onGenerate, onClear, isOpen }: Props) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    inputRef.current?.focus();
+  }, [isOpen]);
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     const code = codeInput.trim();
@@ -21,8 +28,8 @@ export default function ListCodeBox({ listCode, codeInput, setCodeInput, claimin
   };
   if (!listCode) {
     return (
-      <div className='container mx-auto py-4 max-w-2xl'>
-        <div className='mb-4 p-4 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700'>
+      <div className='container mx-auto max-w-2xl'>
+        <div className='py-7 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700'>
           <h2 className='text-lg font-medium mb-2'>Enter or create a private list code</h2>
           <p className='text-sm text-slate-500 dark:text-slate-400 mb-3'>
             This code lets you create your personal list. Using this code, you can access your personal list to different devices.
@@ -30,9 +37,11 @@ export default function ListCodeBox({ listCode, codeInput, setCodeInput, claimin
           </p>
           <form onSubmit={handleSubmit} className='flex gap-2'>
             <input
+              ref={inputRef}
               value={codeInput}
               onChange={(e) => setCodeInput(e.target.value)}
               placeholder='Your code or username'
+              autoFocus={false}
               className='flex-1 px-3 py-2 bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-2xl'
             />
             <button

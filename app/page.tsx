@@ -109,7 +109,7 @@ export default function Home() {
       <ServiceWorkerRegistration />
       <InstallPrompt />
       {shouldShowApp && (
-        <div className='min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
+        <div className='h-[100dvh] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
           {/* Sidebar / modal for ListCodeBox */}
           <div
             className={`fixed inset-0 z-50 ${isCodeOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
@@ -123,18 +123,8 @@ export default function Home() {
 
             {/* Slide-over panel (shorter, centered vertically) */}
             <aside
-              className={`fixed right-0 top-0 -translate-y-0 w-full px-4 py-6 transition-transform transform ${isCodeOpen ? 'translate-x-0' : 'translate-x-full'} bg-white dark:bg-slate-900 shadow-xl rounded-lg h-[50%] overflow-auto`}
+              className={`fixed left-0 bottom-0 w-full transition-transform transform ${isCodeOpen ? 'translate-y-0' : 'translate-y-full'}`}
             >
-              <div className='flex items-center justify-between mb-4'>
-                <h2 className='text-lg font-semibold'>List code</h2>
-                <button
-                  aria-label='Close list code'
-                  onClick={() => setIsCodeOpen(false)}
-                  className='text-slate-500 hover:text-slate-700'
-                >
-                  ✕
-                </button>
-              </div>
               <ListCodeBox
                 listCode={listCode}
                 codeInput={codeInput}
@@ -150,6 +140,7 @@ export default function Home() {
                   setListCode(null);
                   setCodeInput('');
                 }}
+                isOpen={isCodeOpen}
               />
             </aside>
           </div>
@@ -159,11 +150,11 @@ export default function Home() {
             <div className='flex items-center justify-between mb-6'>
               <h1 className='text-4xl font-semibold tracking-tight text-slate-800 dark:text-slate-100 mb-1'>Groceries</h1>
               <button
-                aria-label='Open list code'
+                aria-label='Add new or open your list'
                 onClick={() => setIsCodeOpen(true)}
-                className='inline-flex items-center justify-center h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm hover:scale-95 transition'
+                className='inline-flex items-center gap-2 px-3 py-2 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm hover:scale-95 transition'
               >
-                {/* Hamburger icon */}
+                {/* Plus icon */}
                 <svg
                   className='h-5 w-5'
                   viewBox='0 0 24 24'
@@ -174,8 +165,9 @@ export default function Home() {
                   strokeLinejoin='round'
                   aria-hidden
                 >
-                  <path d='M3 12h18M3 6h18M3 18h18' />
+                  <path d='M12 5v14M5 12h14' />
                 </svg>
+                <span className=' sm:inline text-sm font-medium'>Add/Open list</span>
               </button>
             </div>
 
