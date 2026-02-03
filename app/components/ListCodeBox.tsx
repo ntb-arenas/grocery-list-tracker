@@ -1,6 +1,7 @@
-'use client';
+"use client";
 
 import React, { useEffect, useRef } from 'react';
+import { useRouter } from 'next/navigation';
 
 interface Props {
   listCode: string | null;
@@ -15,20 +16,28 @@ interface Props {
 
 export default function ListCodeBox({ listCode, codeInput, setCodeInput, claiming, onClaim, onGenerate, onClear, isOpen }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (!isOpen) return;
     inputRef.current?.focus();
   }, [isOpen]);
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const code = codeInput.trim();
     if (!code) return;
-    onClaim(code);
+    try {
+      // Support sync or async onClaim
+      await Promise.resolve(onClaim(code));
+      setCodeInput('');
+      // Navigate straight to personal page
+      router.push('/personal');
+    } catch (err) {
+      console.error('Failed to claim list code', err);
+    }
   };
   if (!listCode) {
     return (
-      <div className='container mx-auto max-w-2xl'>
         <div className='py-7 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700'>
           <h2 className='text-lg font-medium mb-2'>Enter or create a private list code</h2>
           <p className='text-sm text-slate-500 dark:text-slate-400 mb-3'>
@@ -53,7 +62,6 @@ export default function ListCodeBox({ listCode, codeInput, setCodeInput, claimin
             </button>
           </form>
         </div>
-      </div>
     );
   }
 
