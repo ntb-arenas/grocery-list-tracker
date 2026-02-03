@@ -9,6 +9,7 @@ import useSelection from '@/lib/hooks/useSelection';
 import PersonalListCard from '@/app/components/PersonalListCard';
 import { usePersonalListsFacade } from '@/lib/hooks/usePersonalListsFacade';
 import { useShouldShowApp } from '@/lib/hooks/useShouldShowApp';
+import { syncLocalListsWithFirebase } from '@/lib/utils/syncLocalListsWithFirebase';
 
 export default function HomePage() {
   const {
@@ -85,6 +86,11 @@ export default function HomePage() {
       document.documentElement.style.overflow = prevDocOverflow;
     };
   }, [isCodeOpen]);
+
+
+  useEffect(() => {
+    syncLocalListsWithFirebase();
+  }, []);
 
   // List code modal logic
   const handleClaimList = (code: string) => {
