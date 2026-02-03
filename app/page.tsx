@@ -7,6 +7,7 @@ import useGroceryLists from '@/lib/hooks/useGroceryLists';
 import AddItemForm from './components/AddItemForm';
 import ListCodeBox from './components/ListCodeBox';
 import ItemsSection from './components/ItemsSection';
+import useSelection from '@/lib/hooks/useSelection';
 
 export default function Home() {
   const {
@@ -26,9 +27,18 @@ export default function Home() {
   } = useGroceryLists();
   const [newGlobalItem, setNewGlobalItem] = useState('');
   const [newPersonalItem, setNewPersonalItem] = useState('');
-  const [selectedItems, setSelectedItems] = useState<Set<string>>(new Set());
+  const {
+    selected: selectedItems,
+    toggleSelection,
+    toggleSelectList,
+    selectedIdsFor,
+    hasSelectedIn,
+    selectedHasUnbought,
+    selectedHasBought,
+  } = useSelection();
   const [shouldShowApp, setShouldShowApp] = useState(false);
   const [codeInput, setCodeInput] = useState('');
+  const [isCodeOpen, setIsCodeOpen] = useState(false);
 
   // Check if app should be shown (PWA or bypassed install)
   useEffect(() => {
@@ -77,42 +87,22 @@ export default function Home() {
   };
 
   // Selection logic
-  const toggleSelection = (id: string) => {
-    setSelectedItems((prev) => {
-      const newSelection = new Set(prev);
-      newSelection.has(id) ? newSelection.delete(id) : newSelection.add(id);
-      return newSelection;
-    });
-  };
-
-  const toggleSelectAll = () => {
-    const combined = getCombinedItems();
-    setSelectedItems(selectedItems.size === combined.length ? new Set() : new Set(combined.map((item) => item.id)));
-  };
-
-  // Bulk actions (scoped per-item based on combined id)
-  const markSelectedAsBought = async () => {
-    if (selectedItems.size === 0) return;
-    await markItems(Array.from(selectedItems), true);
-    setSelectedItems(new Set());
-  };
-
-  const markSelectedAsUnbought = async () => {
-    if (selectedItems.size === 0) return;
-    await markItems(Array.from(selectedItems), false);
-    setSelectedItems(new Set());
-  };
-
-  const deleteSelectedItems = async () => {
-    if (selectedItems.size === 0) return;
-    await deleteItems(Array.from(selectedItems));
-    setSelectedItems(new Set());
-  };
+  const toggleSelectPersonal = () => toggleSelectList(listItems.map((i) => i.id));
+  const toggleSelectGlobal = () => toggleSelectList(globalItems.map((i) => i.id));
 
   const toggleItemCompleted = async (e: React.MouseEvent, combinedId: string, currentStatus: boolean) => {
     e.stopPropagation(); // Prevent selection toggle
     await toggleItem(combinedId, currentStatus);
   };
+
+  const hasSelectedInPersonal = hasSelectedIn(listItems);
+  const hasSelectedInGlobal = hasSelectedIn(globalItems);
+  const selectedPersonalIds = selectedIdsFor(listItems);
+  const selectedGlobalIds = selectedIdsFor(globalItems);
+  const selectedPersonalHasUnbought = selectedHasUnbought(listItems);
+  const selectedPersonalHasBought = selectedHasBought(listItems);
+  const selectedGlobalHasUnbought = selectedHasUnbought(globalItems);
+  const selectedGlobalHasBought = selectedHasBought(globalItems);
 
   return (
     <>
@@ -120,70 +110,74 @@ export default function Home() {
       <InstallPrompt />
       {shouldShowApp && (
         <div className='min-h-screen bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
-          <ListCodeBox
-            listCode={listCode}
-            codeInput={codeInput}
-            setCodeInput={setCodeInput}
-            claiming={claiming}
-            onClaim={(code) => claimList(code)}
-            onGenerate={(code) => {
-              setCodeInput(code);
-              claimList(code);
-            }}
-            onClear={() => {
-              localStorage.removeItem('groceryListCode');
-              setListCode(null);
-              setCodeInput('');
-            }}
-          />
+          {/* Sidebar / modal for ListCodeBox */}
+          <div
+            className={`fixed inset-0 z-50 ${isCodeOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
+            aria-hidden={!isCodeOpen}
+          >
+            {/* Backdrop */}
+            <div
+              className={`fixed inset-0 bg-black/80 transition-opacity ${isCodeOpen ? 'opacity-100' : 'opacity-0'}`}
+              onClick={() => setIsCodeOpen(false)}
+            />
+
+            {/* Slide-over panel (shorter, centered vertically) */}
+            <aside
+              className={`fixed right-0 top-0 -translate-y-0 w-full px-4 py-6 transition-transform transform ${isCodeOpen ? 'translate-x-0' : 'translate-x-full'} bg-white dark:bg-slate-900 shadow-xl rounded-lg h-[50%] overflow-auto`}
+            >
+              <div className='flex items-center justify-between mb-4'>
+                <h2 className='text-lg font-semibold'>List code</h2>
+                <button
+                  aria-label='Close list code'
+                  onClick={() => setIsCodeOpen(false)}
+                  className='text-slate-500 hover:text-slate-700'
+                >
+                  ✕
+                </button>
+              </div>
+              <ListCodeBox
+                listCode={listCode}
+                codeInput={codeInput}
+                setCodeInput={setCodeInput}
+                claiming={claiming}
+                onClaim={(code) => claimList(code)}
+                onGenerate={(code) => {
+                  setCodeInput(code);
+                  claimList(code);
+                }}
+                onClear={() => {
+                  localStorage.removeItem('groceryListCode');
+                  setListCode(null);
+                  setCodeInput('');
+                }}
+              />
+            </aside>
+          </div>
+
           <div className='container mx-auto px-4 py-8 max-w-2xl'>
             {/* Header */}
-            <div className='mb-6'>
+            <div className='flex items-center justify-between mb-6'>
               <h1 className='text-4xl font-semibold tracking-tight text-slate-800 dark:text-slate-100 mb-1'>Groceries</h1>
+              <button
+                aria-label='Open list code'
+                onClick={() => setIsCodeOpen(true)}
+                className='inline-flex items-center justify-center h-10 w-10 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 shadow-sm hover:scale-95 transition'
+              >
+                {/* Hamburger icon */}
+                <svg
+                  className='h-5 w-5'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2'
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  aria-hidden
+                >
+                  <path d='M3 12h18M3 6h18M3 18h18' />
+                </svg>
+              </button>
             </div>
-
-            {/* Select All & Actions */}
-            {getCombinedItems().length > 0 && (
-              <div className='mb-4'>
-                {selectedItems.size === 0 ? (
-                  <button
-                    onClick={toggleSelectAll}
-                    className='text-sm text-indigo-600 hover:text-indigo-700 active:text-indigo-800 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
-                  >
-                    Select all
-                  </button>
-                ) : (
-                  <div className='flex items-center gap-3 p-3 bg-indigo-50 dark:bg-indigo-950/30 backdrop-blur-sm rounded-2xl border border-indigo-100 dark:border-indigo-900/50'>
-                    <button onClick={toggleSelectAll} className='text-sm text-indigo-700 dark:text-indigo-300 font-medium'>
-                      {selectedItems.size === getCombinedItems().length ? 'Deselect all' : `${selectedItems.size} selected`}
-                    </button>
-                    <div className='flex-1'></div>
-                    {Array.from(selectedItems).some((id) => !getCombinedItems().find((item) => item.id === id)?.completed) && (
-                      <button
-                        onClick={markSelectedAsBought}
-                        className='px-4 py-2 bg-emerald-500 hover:bg-emerald-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm'
-                      >
-                        ✓ Bought
-                      </button>
-                    )}
-                    {Array.from(selectedItems).some((id) => getCombinedItems().find((item) => item.id === id)?.completed) && (
-                      <button
-                        onClick={markSelectedAsUnbought}
-                        className='px-4 py-2 bg-amber-500 hover:bg-amber-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm'
-                      >
-                        ↩ Unbought
-                      </button>
-                    )}
-                    <button
-                      onClick={deleteSelectedItems}
-                      className='px-4 py-2 bg-rose-500 hover:bg-rose-600 active:scale-95 text-white text-sm font-medium rounded-full transition-all shadow-sm'
-                    >
-                      🗑 Delete
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
 
             {loading ? (
               <div className='text-center py-16'>
@@ -211,12 +205,46 @@ export default function Home() {
                           Private list tied to a code. Syncs across your devices.
                         </p>
                       </div>
-                      <div className='ml-auto text-sm text-slate-400'>{claiming ? 'Claiming...' : ''}</div>
+                      <div className='ml-auto flex items-center gap-2'>
+                        <button
+                          onClick={toggleSelectPersonal}
+                          className='text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
+                        >
+                          {selectedPersonalIds.length === listItems.length && listItems.length > 0 ? 'Deselect' : 'Select all'}
+                        </button>
+                        <div className='text-sm text-slate-400'>{claiming ? 'Claiming...' : ''}</div>
+                        {hasSelectedInPersonal && (
+                          <>
+                            {selectedPersonalHasUnbought && (
+                              <button
+                                onClick={async () => await markItems(selectedPersonalIds, true)}
+                                className='px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-sm'
+                              >
+                                ✓ Bought
+                              </button>
+                            )}
+                            {selectedPersonalHasBought && (
+                              <button
+                                onClick={async () => await markItems(selectedPersonalIds, false)}
+                                className='px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-sm'
+                              >
+                                ↩ Unbought
+                              </button>
+                            )}
+                            <button
+                              onClick={async () => await deleteItems(selectedPersonalIds)}
+                              className='px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl text-sm'
+                            >
+                              🗑 Delete
+                            </button>
+                          </>
+                        )}
+                      </div>
                     </div>
 
                     <form onSubmit={addPersonal} className='mb-4'>
                       <h4 className='text-sm text-indigo-600 mb-2'>Add to Personal</h4>
-                      <AddItemForm value={newPersonalItem} onChange={setNewPersonalItem} onSubmit={addPersonal} />
+                      <AddItemForm value={newPersonalItem} onChange={setNewPersonalItem} />
                     </form>
 
                     {listItems.length > 0 && (
@@ -242,17 +270,44 @@ export default function Home() {
                       <p className='text-xs text-slate-500 dark:text-slate-400'>Shared list visible to all users.</p>
                     </div>
                     <div className='ml-auto flex items-center gap-2'>
-                      {globalItems.length > 0 && (
-                        <span className='inline-flex items-center px-2 py-1 rounded-full text-xs bg-emerald-100 text-emerald-800 dark:bg-emerald-900/30 dark:text-emerald-300'>
-                          {globalItems.length} {globalItems.length === 1 ? 'item' : 'items'}
-                        </span>
+                      <button
+                        onClick={toggleSelectGlobal}
+                        className='text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
+                      >
+                        {selectedGlobalIds.length === globalItems.length && globalItems.length > 0 ? 'Deselect' : 'Select all'}
+                      </button>
+                      {hasSelectedInGlobal && (
+                        <>
+                          {selectedGlobalHasUnbought && (
+                            <button
+                              onClick={async () => await markItems(selectedGlobalIds, true)}
+                              className='px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-sm'
+                            >
+                              ✓ Bought
+                            </button>
+                          )}
+                          {selectedGlobalHasBought && (
+                            <button
+                              onClick={async () => await markItems(selectedGlobalIds, false)}
+                              className='px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-sm'
+                            >
+                              ↩ Unbought
+                            </button>
+                          )}
+                          <button
+                            onClick={async () => await deleteItems(selectedGlobalIds)}
+                            className='px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl text-sm'
+                          >
+                            🗑 Delete
+                          </button>
+                        </>
                       )}
                     </div>
                   </div>
 
                   <form onSubmit={addGlobal} className='mb-4'>
                     <h4 className='text-sm text-emerald-600 mb-2'>Add to Global</h4>
-                    <AddItemForm value={newGlobalItem} onChange={setNewGlobalItem} onSubmit={addGlobal} />
+                    <AddItemForm value={newGlobalItem} onChange={setNewGlobalItem} />
                   </form>
 
                   {globalItems.length > 0 && (
