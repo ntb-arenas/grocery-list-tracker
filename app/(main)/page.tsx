@@ -39,7 +39,7 @@ export default function HomePage() {
   const [codeInput, setCodeInput] = useState('');
   const [isCodeOpen, setIsCodeOpen] = useState(false);
 
-  const shouldShowApp = useShouldShowApp();
+  const { shouldShowApp } = useShouldShowApp();
 
   // Add to global
   const addGlobal = async (e: React.FormEvent) => {
@@ -75,7 +75,7 @@ export default function HomePage() {
     if (isCodeOpen) {
       document.body.style.touchAction = 'none';
       document.body.style.overflow = 'hidden';
-      
+
       return () => {
         document.body.style.touchAction = '';
         document.body.style.overflow = '';

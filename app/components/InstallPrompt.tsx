@@ -5,13 +5,13 @@ import { useShouldShowApp } from '@/lib/hooks/useShouldShowApp';
 import { setLocalStorageItem } from '@/lib/utils/storage';
 
 export default function InstallPrompt() {
-  const shouldShowApp = useShouldShowApp();
+  const { shouldShowApp, isLoading } = useShouldShowApp();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
 
   useEffect(() => {
-    // Detect iOS
+    // Detect iOS 
     const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !(window as any).MSStream;
     setIsIOS(iOS);
 
@@ -48,8 +48,18 @@ export default function InstallPrompt() {
     window.dispatchEvent(new Event('bypass-install'));
   };
 
+  // Show loading spinner while checking
+  if (isLoading) {
+    return (
+      <div className='min-h-screen flex items-center justify-center bg-gradient-to-b from-indigo-500 to-indigo-600 dark:from-indigo-700 dark:to-indigo-900'>
+        <div className='inline-block animate-spin rounded-full h-12 w-12 border-4 border-white border-t-transparent'></div>
+      </div>
+    );
+  }
+
+  // Don't show install prompt if app is already installed or bypassed
   if (shouldShowApp) {
-    return null; // App is installed or bypassed, don't show install prompt
+    return null;
   }
 
   return (

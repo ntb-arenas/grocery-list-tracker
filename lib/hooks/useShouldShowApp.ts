@@ -4,6 +4,7 @@ import { getLocalStorageItem } from '../utils/storage';
 
 export function useShouldShowApp() {
   const [shouldShowApp, setShouldShowApp] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const checkShouldShow = () => {
@@ -11,6 +12,11 @@ export function useShouldShowApp() {
       const isInStandaloneMode = (window.navigator as any).standalone || standalone;
       const hasBypassed = getLocalStorageItem('bypass-install') === 'true';
       setShouldShowApp(isInStandaloneMode || hasBypassed);
+      
+      // Mandatory 3-second loading delay
+      setTimeout(() => {
+        setIsLoading(false);
+      }, 3000);
     };
 
     checkShouldShow();
@@ -25,5 +31,5 @@ export function useShouldShowApp() {
     };
   }, []);
 
-  return shouldShowApp;
+  return { shouldShowApp, isLoading };
 }
