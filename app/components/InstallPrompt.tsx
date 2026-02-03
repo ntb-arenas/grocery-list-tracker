@@ -5,7 +5,7 @@ import { useShouldShowApp } from '@/lib/hooks/useShouldShowApp';
 import { setLocalStorageItem } from '@/lib/utils/storage';
 
 export default function InstallPrompt() {
-  const isStandalone = useShouldShowApp();
+  const shouldShowApp = useShouldShowApp();
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
   const [isIOS, setIsIOS] = useState(false);
   const [isAndroid, setIsAndroid] = useState(false);
@@ -48,8 +48,8 @@ export default function InstallPrompt() {
     window.dispatchEvent(new Event('bypass-install'));
   };
 
-  if (isStandalone) {
-    return null; // App is installed, show main content
+  if (shouldShowApp) {
+    return null; // App is installed or bypassed, don't show install prompt
   }
 
   return (
