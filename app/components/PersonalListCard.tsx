@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
 
 export default function PersonalListCard({
   listCode,
@@ -15,17 +14,10 @@ export default function PersonalListCard({
 }) {
   const router = useRouter();
 
-  useEffect(() => {
-    if (listCode) {
-      // proactively prefetch personal page when a code exists
-      router.prefetch(`/lists/${listCode}`);
-    }
-  }, [listCode, router]);
-
   if (!listCode) return null;
 
   return (
-    <Link href={`/lists/${listCode}`} className='flex mb-2' onMouseEnter={() => router.prefetch(`/lists/${listCode}`)}>
+    <Link href={`/lists/${listCode}`} className='flex mb-2'>
       <div
         className={`flex items-center gap-4 py-3 px-4 rounded-2xl border border-indigo-100 dark:border-indigo-900/40
         bg-gradient-to-br from-indigo-50/60 to-white/60 dark:from-indigo-950/30 dark:to-transparent shadow-sm hover:shadow-md transition-shadow`}
