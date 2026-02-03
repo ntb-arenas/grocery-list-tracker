@@ -4,6 +4,7 @@ import { ReactNode, useEffect, useState, useLayoutEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { usePathname } from 'next/navigation';
 import { fadeIn, pageTransition, scaleIn } from '@/lib/transitions';
+import InstallPrompt from '@/app/components/InstallPrompt';
 
 export function AppProviders({ children }: { children: ReactNode }) {
   const pathname = usePathname();
@@ -35,16 +36,19 @@ export function AppProviders({ children }: { children: ReactNode }) {
   }, [pathname]);
 
   return (
-    <AnimatePresence mode='wait'>
-      <motion.div
-        key={pathname}
-        initial={scaleIn.initial}
-        animate={scaleIn.animate}
-        exit={scaleIn.exit}
-        transition={scaleIn.transition}
-      >
-        {children}
-      </motion.div>
-    </AnimatePresence>
+    <>
+      <InstallPrompt />
+      <AnimatePresence mode='wait'>
+        <motion.div
+          key={pathname}
+          initial={scaleIn.initial}
+          animate={scaleIn.animate}
+          exit={scaleIn.exit}
+          transition={scaleIn.transition}
+        >
+          {children}
+        </motion.div>
+      </AnimatePresence>
+    </>
   );
 }
