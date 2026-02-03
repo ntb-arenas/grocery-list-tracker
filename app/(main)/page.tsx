@@ -67,29 +67,33 @@ export default function HomePage() {
   const selectedGlobalHasUnbought = selectedHasUnbought(globalItems);
   const selectedGlobalHasBought = selectedHasBought(globalItems);
 
-  // Lock background scrolling when the list-code modal is open
-  useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const prevBodyOverflow = document.body.style.overflow;
-    const prevDocOverflow = document.documentElement.style.overflow;
-
-    if (isCodeOpen) {
-      document.body.style.overflow = 'hidden';
-      document.documentElement.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = prevBodyOverflow;
-      document.documentElement.style.overflow = prevDocOverflow;
-    }
-
-    return () => {
-      document.body.style.overflow = prevBodyOverflow;
-      document.documentElement.style.overflow = prevDocOverflow;
-    };
-  }, [isCodeOpen]);
-
   useEffect(() => {
     syncLocalListsWithFirebase();
   }, []);
+
+  useEffect(() => {
+    if (isCodeOpen) {
+      // Save the current scroll position
+      const scrollY = window.scrollY;
+
+      // Prevent scrolling
+      document.body.style.position = 'fixed';
+      document.body.style.top = `-${scrollY}px`;
+      document.body.style.width = '100%';
+      document.body.style.overflow = 'hidden';
+
+      return () => {
+        // Restore scrolling
+        document.body.style.position = '';
+        document.body.style.top = '';
+        document.body.style.width = '';
+        document.body.style.overflow = '';
+
+        // Restore scroll position
+        window.scrollTo(0, scrollY);
+      };
+    }
+  }, [isCodeOpen]);
 
   // List code modal logic
   const handleClaimList = async (code: string) => {
@@ -107,10 +111,10 @@ export default function HomePage() {
   }
 
   return (
-    <div className='h-[100svh] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
+    <div className=''>
       {/* Modal for ListCodeBox */}
       <div
-        className={`fixed inset-0 z-50 ${isCodeOpen ? 'pointer-events-auto' : 'pointer-events-none'}`}
+        className={`inset-0 z-50 ${isCodeOpen ? 'pointer-events-auto fixed' : 'pointer-events-none hidden'}`}
         aria-hidden={!isCodeOpen}
       >
         {/* Backdrop */}
@@ -121,7 +125,7 @@ export default function HomePage() {
 
         {/* Slide-over panel */}
         <aside
-          className={`fixed left-0 bottom-0 w-full transition-transform transform ${isCodeOpen ? 'translate-y-0' : 'translate-y-full'}`}
+          className={`fixed left-0 w-full transition-transform transform ${isCodeOpen ? 'translate-y-0' : 'translate-y-full'}`}
         >
           <ListCodeBox
             listCode={activeListCode}
@@ -138,11 +142,15 @@ export default function HomePage() {
               setCodeInput('');
             }}
             isOpen={isCodeOpen}
+            onClose={() => setIsCodeOpen(false)}
           />
         </aside>
       </div>
 
-      <div aria-hidden={isCodeOpen} className='container mx-auto px-4 py-8 max-w-2xl'>
+      <div
+        aria-hidden={isCodeOpen}
+        className='container mx-auto px-4 py-8 max-w-2xl min-h-[100svh] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'
+      >
         {/* Header */}
         <div className='flex items-center justify-between mb-6'>
           <h1 className='text-4xl font-semibold tracking-tight text-slate-800 dark:text-slate-100 mb-1'>Groceries</h1>

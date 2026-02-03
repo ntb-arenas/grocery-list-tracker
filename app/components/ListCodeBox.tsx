@@ -12,6 +12,7 @@ interface Props {
   onGenerate: (code: string) => void;
   onClear: () => void;
   isOpen: boolean;
+  onClose?: () => void;
 }
 
 export default function ListCodeBox({
@@ -23,6 +24,7 @@ export default function ListCodeBox({
   onGenerate,
   onClear,
   isOpen,
+  onClose,
 }: Props) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const router = useRouter();
@@ -48,7 +50,28 @@ export default function ListCodeBox({
   // Always show the input for adding a new code
   return (
     <div className='py-10 px-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700'>
-      <h2 className='text-lg font-medium mb-2'>Enter or create a private list code</h2>
+      <div className='flex items-center justify-between mb-2'>
+        <h2 className='text-lg font-medium'>Enter or create a private list code</h2>
+        {onClose && (
+          <button
+            onClick={onClose}
+            aria-label='Close modal'
+            className='p-1 rounded-full hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors'
+          >
+            <svg
+              className='h-6 w-6 text-slate-500 dark:text-slate-400'
+              viewBox='0 0 24 24'
+              fill='none'
+              stroke='currentColor'
+              strokeWidth='2'
+              strokeLinecap='round'
+              strokeLinejoin='round'
+            >
+              <path d='M18 6L6 18M6 6l12 12' />
+            </svg>
+          </button>
+        )}
+      </div>
       <p className='text-sm text-slate-500 dark:text-slate-400 mb-3'>
         This code lets you create your personal list. Using this code, you can access your personal list on different devices.
         Keep it secret.
