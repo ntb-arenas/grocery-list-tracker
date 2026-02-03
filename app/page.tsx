@@ -143,7 +143,7 @@ export default function Home() {
 
             {/* Slide-over panel (shorter, centered vertically) */}
             <aside
-              className={`fixed left-0 bottom-0 w-full transition-transform transform overflow-auto ${isCodeOpen ? 'translate-y-0' : 'translate-y-full'}`}
+              className={`fixed left-0 bottom-0 w-full transition-transform transform ${isCodeOpen ? 'translate-y-0' : 'translate-y-full'}`}
             >
               <ListCodeBox
                 listCode={listCode}
