@@ -125,7 +125,7 @@ export default function HomePage() {
 
         {/* Slide-over panel */}
         <aside
-          className={`fixed left-0 bottom-0 w-full transition-transform transform ${isCodeOpen ? 'translate-y-0' : 'translate-y-full'}`}
+          className={`fixed left-0 w-full transition-transform transform ${isCodeOpen ? 'translate-y-0' : 'translate-y-full'}`}
         >
           <ListCodeBox
             listCode={activeListCode}
