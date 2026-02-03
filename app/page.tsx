@@ -195,50 +195,12 @@ export default function Home() {
                   <div className='p-4 rounded-2xl border border-indigo-100 dark:border-indigo-900/40 bg-gradient-to-br from-indigo-50/60 to-white/60 dark:from-indigo-950/30 dark:to-transparent shadow-sm'>
                     <div className='flex items-start gap-3 mb-4'>
                       <div>
-                        <span className='inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-indigo-600 text-white'>
-                          Personal
-                        </span>
-                        <h3 className='text-lg font-semibold text-slate-800 dark:text-slate-100 mt-2'>
+                        <h3 className='text-lg font-semibold text-slate-800 dark:text-slate-100'>
                           Personal list{listCode ? `: ${listCode}` : ''}
                         </h3>
                         <p className='text-xs text-slate-500 dark:text-slate-400'>
                           Private list tied to a code. Syncs across your devices.
                         </p>
-                      </div>
-                      <div className='ml-auto flex items-center gap-2'>
-                        <button
-                          onClick={toggleSelectPersonal}
-                          className='text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
-                        >
-                          {selectedPersonalIds.length === listItems.length && listItems.length > 0 ? 'Deselect' : 'Select all'}
-                        </button>
-                        <div className='text-sm text-slate-400'>{claiming ? 'Claiming...' : ''}</div>
-                        {hasSelectedInPersonal && (
-                          <>
-                            {selectedPersonalHasUnbought && (
-                              <button
-                                onClick={async () => await markItems(selectedPersonalIds, true)}
-                                className='px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-sm'
-                              >
-                                ✓ Bought
-                              </button>
-                            )}
-                            {selectedPersonalHasBought && (
-                              <button
-                                onClick={async () => await markItems(selectedPersonalIds, false)}
-                                className='px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-sm'
-                              >
-                                ↩ Unbought
-                              </button>
-                            )}
-                            <button
-                              onClick={async () => await deleteItems(selectedPersonalIds)}
-                              className='px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl text-sm'
-                            >
-                              🗑 Delete
-                            </button>
-                          </>
-                        )}
                       </div>
                     </div>
 
@@ -246,6 +208,42 @@ export default function Home() {
                       <h4 className='text-sm text-indigo-600 mb-2'>Add to Personal</h4>
                       <AddItemForm value={newPersonalItem} onChange={setNewPersonalItem} />
                     </form>
+
+                    <div className='flex gap-2 mb-3'>
+                      <button
+                        onClick={toggleSelectPersonal}
+                        className='text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
+                      >
+                        {selectedPersonalIds.length === listItems.length && listItems.length > 0 ? 'Deselect' : 'Select all'}
+                      </button>
+                      <div className='text-sm text-slate-400'>{claiming ? 'Claiming...' : ''}</div>
+                      {hasSelectedInPersonal && (
+                        <>
+                          {selectedPersonalHasUnbought && (
+                            <button
+                              onClick={async () => await markItems(selectedPersonalIds, true)}
+                              className='px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-sm'
+                            >
+                              ✓ Bought
+                            </button>
+                          )}
+                          {selectedPersonalHasBought && (
+                            <button
+                              onClick={async () => await markItems(selectedPersonalIds, false)}
+                              className='px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-sm'
+                            >
+                              ↩ Unbought
+                            </button>
+                          )}
+                          <button
+                            onClick={async () => await deleteItems(selectedPersonalIds)}
+                            className='px-3 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl text-sm'
+                          >
+                            🗑 Delete
+                          </button>
+                        </>
+                      )}
+                    </div>
 
                     {listItems.length > 0 && (
                       <ItemsSection
@@ -263,45 +261,8 @@ export default function Home() {
                 <div className='p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-emerald-50/60 to-white/60 dark:from-emerald-950/20 dark:to-transparent shadow-sm'>
                   <div className='flex items-start gap-3 mb-4'>
                     <div>
-                      <span className='inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-emerald-600 text-white'>
-                        Global
-                      </span>
-                      <h3 className='text-lg font-semibold text-slate-800 dark:text-slate-100 mt-2'>Global list</h3>
+                      <h3 className='text-lg font-semibold text-slate-800 dark:text-slate-100'>Global list</h3>
                       <p className='text-xs text-slate-500 dark:text-slate-400'>Shared list visible to all users.</p>
-                    </div>
-                    <div className='ml-auto flex items-center gap-2'>
-                      <button
-                        onClick={toggleSelectGlobal}
-                        className='text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
-                      >
-                        {selectedGlobalIds.length === globalItems.length && globalItems.length > 0 ? 'Deselect' : 'Select all'}
-                      </button>
-                      {hasSelectedInGlobal && (
-                        <>
-                          {selectedGlobalHasUnbought && (
-                            <button
-                              onClick={async () => await markItems(selectedGlobalIds, true)}
-                              className='px-3 py-2 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-sm'
-                            >
-                              ✓ Bought
-                            </button>
-                          )}
-                          {selectedGlobalHasBought && (
-                            <button
-                              onClick={async () => await markItems(selectedGlobalIds, false)}
-                              className='px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-sm'
-                            >
-                              ↩ Unbought
-                            </button>
-                          )}
-                          <button
-                            onClick={async () => await deleteItems(selectedGlobalIds)}
-                            className='px-3 py-2 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl text-sm'
-                          >
-                            🗑 Delete
-                          </button>
-                        </>
-                      )}
                     </div>
                   </div>
 
@@ -309,6 +270,41 @@ export default function Home() {
                     <h4 className='text-sm text-emerald-600 mb-2'>Add to Global</h4>
                     <AddItemForm value={newGlobalItem} onChange={setNewGlobalItem} />
                   </form>
+
+                  <div className='flex gap-2 mb-3'>
+                    <button
+                      onClick={toggleSelectGlobal}
+                      className='text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
+                    >
+                      {selectedGlobalIds.length === globalItems.length && globalItems.length > 0 ? 'Deselect' : 'Select all'}
+                    </button>
+                    {hasSelectedInGlobal && (
+                      <>
+                        {selectedGlobalHasUnbought && (
+                          <button
+                            onClick={async () => await markItems(selectedGlobalIds, true)}
+                            className='px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-sm'
+                          >
+                            ✓ Bought
+                          </button>
+                        )}
+                        {selectedGlobalHasBought && (
+                          <button
+                            onClick={async () => await markItems(selectedGlobalIds, false)}
+                            className='px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-sm'
+                          >
+                            ↩ Unbought
+                          </button>
+                        )}
+                        <button
+                          onClick={async () => await deleteItems(selectedGlobalIds)}
+                          className='px-3 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl text-sm'
+                        >
+                          🗑 Delete
+                        </button>
+                      </>
+                    )}
+                  </div>
 
                   {globalItems.length > 0 && (
                     <ItemsSection
