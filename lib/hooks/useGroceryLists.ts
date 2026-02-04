@@ -39,39 +39,32 @@ export default function useGroceryLists(initialCode?: string) {
   useEffect(() => {
     setLoading(true);
 
-    // clear the other mode immediately
-    if (listCode) {
-      setGlobalItems([]);
-    } else {
-      setListItems([]);
-    }
-
     const unsubscribes: Array<() => void> = [];
 
-    if (!listCode) {
-      const globalQuery = query(collection(db, 'groceryItems'), orderBy('createdAt', 'desc'));
-      const unsubGlobal = onSnapshot(
-        globalQuery,
-        (snapshot) => {
-          const items: GroceryItem[] = snapshot.docs.map((d) => ({
-            id: `global:${d.id}`,
-            origId: d.id,
-            collection: 'global',
-            name: d.data().name,
-            completed: d.data().completed,
-            createdAt: d.data().createdAt,
-          }));
-          setGlobalItems(items);
-          setLoading(false);
-        },
-        (error) => {
-          console.error('Firestore global error:', error);
-          setLoading(false);
-        }
-      );
-      unsubscribes.push(unsubGlobal);
-    }
+    // Always subscribe to global items
+    const globalQuery = query(collection(db, 'groceryItems'), orderBy('createdAt', 'desc'));
+    const unsubGlobal = onSnapshot(
+      globalQuery,
+      (snapshot) => {
+        const items: GroceryItem[] = snapshot.docs.map((d) => ({
+          id: `global:${d.id}`,
+          origId: d.id,
+          collection: 'global',
+          name: d.data().name,
+          completed: d.data().completed,
+          createdAt: d.data().createdAt,
+        }));
+        setGlobalItems(items);
+        setLoading(false);
+      },
+      (error) => {
+        console.error('Firestore global error:', error);
+        setLoading(false);
+      }
+    );
+    unsubscribes.push(unsubGlobal);
 
+    // Subscribe to list items if a listCode is set
     if (listCode) {
       const listQuery = query(collection(db, 'lists', listCode, 'items'), orderBy('createdAt', 'desc'));
       const unsubList = onSnapshot(
@@ -94,6 +87,8 @@ export default function useGroceryLists(initialCode?: string) {
         }
       );
       unsubscribes.push(unsubList);
+    } else {
+      setListItems([]);
     }
 
     return () => unsubscribes.forEach((unsub) => unsub());
