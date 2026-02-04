@@ -16,6 +16,40 @@ export function usePersonalListsFacade() {
     setIsInitialized(true);
   }, []);
 
+  // Listen for storage changes (from real-time updates or other tabs)
+  useEffect(() => {
+    const handleStorageChange = () => {
+      const stored = getLocalStorageItem('personalListCodes');
+      const codes = stored ? JSON.parse(stored) : [];
+
+      // Only update if codes actually changed
+      setPersonalListCodes((prev) => {
+        const changed = JSON.stringify(prev) !== JSON.stringify(codes);
+        if (!changed) return prev;
+        return codes;
+      });
+
+      // Update active list code if it was deleted
+      setActiveListCode((prev) => {
+        if (prev && !codes.includes(prev)) {
+          return codes[0] || null;
+        }
+        return prev;
+      });
+    };
+
+    // Listen to storage changes
+    window.addEventListener('storage', handleStorageChange);
+
+    // Also create a custom event for same-tab updates
+    window.addEventListener('personalListsUpdated', handleStorageChange);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('personalListsUpdated', handleStorageChange);
+    };
+  }, []);
+
   // Sync to localStorage whenever codes change (but only after initialization)
   useEffect(() => {
     if (isInitialized) {
@@ -31,16 +65,16 @@ export function usePersonalListsFacade() {
   };
 
   const clearList = (code: string) => {
-    setPersonalListCodes((prev) => prev.filter((c) => c !== code));
+    setPersonalListCodes((prev) => {
+      const updated = prev.filter((c) => c !== code);
 
-    // If clearing the active list, switch to another one
-    if (activeListCode === code) {
-      setPersonalListCodes((prev) => {
-        const remaining = prev.filter((c) => c !== code);
-        setActiveListCode(remaining[0] || null);
-        return remaining;
-      });
-    }
+      // If clearing the active list, switch to another one
+      if (activeListCode === code) {
+        setActiveListCode(updated[0] || null);
+      }
+
+      return updated;
+    });
   };
 
   return {

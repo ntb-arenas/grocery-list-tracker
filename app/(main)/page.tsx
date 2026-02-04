@@ -8,7 +8,7 @@ import ItemsSection from '@/app/components/ItemsSection';
 import useSelection from '@/lib/hooks/useSelection';
 import PersonalListCard from '@/app/components/PersonalListCard';
 import { usePersonalListsFacade } from '@/lib/hooks/usePersonalListsFacade';
-import { syncLocalListsWithFirebase } from '@/lib/utils/syncLocalListsWithFirebase';
+import { usePersonalListsRealTime } from '@/lib/hooks/usePersonalListsRealTime';
 import { useShouldShowApp } from '@/lib/hooks/useShouldShowApp';
 
 export default function HomePage() {
@@ -25,6 +25,8 @@ export default function HomePage() {
     getCombinedItems,
   } = useGroceryLists();
   const { personalListCodes, activeListCode, isInitialized, claimList, clearList } = usePersonalListsFacade();
+  // Real-time sync of personal lists with Firebase
+  usePersonalListsRealTime();
 
   const [newGlobalItem, setNewGlobalItem] = useState('');
   const {
@@ -65,10 +67,6 @@ export default function HomePage() {
   const selectedGlobalIds = selectedIdsFor(globalItems);
   const selectedGlobalHasUnbought = selectedHasUnbought(globalItems);
   const selectedGlobalHasBought = selectedHasBought(globalItems);
-
-  useEffect(() => {
-    syncLocalListsWithFirebase();
-  }, []);
 
   useEffect(() => {
     if (isCodeOpen) {
@@ -180,10 +178,7 @@ export default function HomePage() {
         {isInitialized && personalListCodes.length > 0 && (
           <div className='space-y-2 mb-6'>
             {personalListCodes.map((code) => (
-              <PersonalListCard
-                key={code}
-                listCode={code}
-              />
+              <PersonalListCard key={code} listCode={code} />
             ))}
           </div>
         )}
