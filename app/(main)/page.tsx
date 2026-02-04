@@ -9,8 +9,10 @@ import useSelection from '@/lib/hooks/useSelection';
 import PersonalListCard from '@/app/components/PersonalListCard';
 import { usePersonalListsFacade } from '@/lib/hooks/usePersonalListsFacade';
 import { syncLocalListsWithFirebase } from '@/lib/utils/syncLocalListsWithFirebase';
+import { useShouldShowApp } from '@/lib/hooks/useShouldShowApp';
 
 export default function HomePage() {
+  const { shouldShowApp } = useShouldShowApp();
   const {
     globalItems,
     loading,
@@ -91,6 +93,11 @@ export default function HomePage() {
     clearList(code);
   };
 
+  // Don't show the app if not installed or bypassed
+  if (!shouldShowApp) {
+    return null;
+  }
+
   return (
     <div className=''>
       {/* Modal for ListCodeBox */}
@@ -135,10 +142,26 @@ export default function HomePage() {
           <button
             aria-label='Add new or open your list'
             onClick={() => setIsCodeOpen(true)}
-            className='inline-flex items-center gap-2 px-5 py-2 bg-gradient-to-r from-slate-100 to-slate-200 dark:from-slate-800 dark:to-slate-900 text-slate-800 dark:text-slate-100 rounded-full shadow hover:shadow-md hover:bg-slate-300 transition-all border border-slate-200 dark:border-slate-800 focus:outline-none focus:ring-2 focus:ring-indigo-400 focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900 text-base font-medium'
+            className='
+              inline-flex items-center gap-2 px-5 py-2
+              bg-gradient-to-r from-slate-100 to-slate-200
+              dark:from-slate-800 dark:to-slate-900
+              text-slate-800 dark:text-slate-100
+              rounded-full border border-slate-200 dark:border-slate-800
+              text-base font-medium
+
+              shadow
+              transition-transform transition-shadow duration-150 ease-out
+              active:scale-95 active:shadow-inner
+
+              focus:outline-none focus:ring-2 focus:ring-indigo-400
+              focus:ring-offset-2 focus:ring-offset-white dark:focus:ring-offset-slate-900
+
+              [-webkit-tap-highlight-color:transparent]
+            '
           >
             <svg
-              className='h-5 w-5 text-indigo-500 dark:text-indigo-300'
+              className='h-5 w-5 transition-transform duration-150 group-active:translate-x-1 text-indigo-500 dark:text-indigo-300'
               viewBox='0 0 24 24'
               fill='none'
               stroke='currentColor'
