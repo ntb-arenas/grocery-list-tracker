@@ -183,8 +183,6 @@ export default function HomePage() {
               <PersonalListCard
                 key={code}
                 listCode={code}
-                isActive={code === activeListCode}
-                onClear={() => handleClearList(code)}
               />
             ))}
           </div>

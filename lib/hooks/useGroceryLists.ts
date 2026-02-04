@@ -38,6 +38,14 @@ export default function useGroceryLists(initialCode?: string) {
   // Firebase subscriptions
   useEffect(() => {
     setLoading(true);
+
+    // clear the other mode immediately
+    if (listCode) {
+      setGlobalItems([]);
+    } else {
+      setListItems([]);
+    }
+
     const unsubscribes: Array<() => void> = [];
 
     if (!listCode) {
@@ -48,7 +56,7 @@ export default function useGroceryLists(initialCode?: string) {
           const items: GroceryItem[] = snapshot.docs.map((d) => ({
             id: `global:${d.id}`,
             origId: d.id,
-            collection: 'global' as const,
+            collection: 'global',
             name: d.data().name,
             completed: d.data().completed,
             createdAt: d.data().createdAt,
@@ -64,7 +72,6 @@ export default function useGroceryLists(initialCode?: string) {
       unsubscribes.push(unsubGlobal);
     }
 
-    // Subscribe to list items if we have a list code
     if (listCode) {
       const listQuery = query(collection(db, 'lists', listCode, 'items'), orderBy('createdAt', 'desc'));
       const unsubList = onSnapshot(
@@ -73,7 +80,7 @@ export default function useGroceryLists(initialCode?: string) {
           const items: GroceryItem[] = snapshot.docs.map((d) => ({
             id: `list:${listCode}:${d.id}`,
             origId: d.id,
-            collection: 'list' as const,
+            collection: 'list',
             name: d.data().name,
             completed: d.data().completed,
             createdAt: d.data().createdAt,

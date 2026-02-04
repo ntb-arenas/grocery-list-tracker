@@ -1,18 +1,12 @@
 'use client';
 
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 
 export default function PersonalListCard({
   listCode,
-  isActive,
-  onClear,
 }: {
   listCode: string;
-  isActive: boolean;
-  onClear: () => void;
 }) {
-  const router = useRouter();
 
   if (!listCode) return null;
 
