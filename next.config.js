@@ -99,8 +99,6 @@ const withPWA = require('next-pwa')({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  // Disable turbopack for production builds (Vercel compatibility)
-  ...(process.env.NODE_ENV === 'production' ? {} : { turbopack: {} }),
   // Ensure public folder files are accessible
   async headers() {
     return [
