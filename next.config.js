@@ -2,8 +2,11 @@ const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
   skipWaiting: true,
-  disable: false, // Always enabled for testing
+  // Disable only in development, enable in production
+  disable: process.env.NODE_ENV === 'development',
   buildExcludes: [/middleware-manifest\.json$/],
+  // Ensure service worker is generated in public folder
+  publicExcludes: ['!sw.js', '!workbox-*.js'],
   runtimeCaching: [
     // Firebase Firestore - Critical for offline grocery lists
     {
@@ -96,7 +99,26 @@ const withPWA = require('next-pwa')({
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  turbopack: {},
+  // Disable turbopack for production builds (Vercel compatibility)
+  ...(process.env.NODE_ENV === 'production' ? {} : { turbopack: {} }),
+  // Ensure public folder files are accessible
+  async headers() {
+    return [
+      {
+        source: '/sw.js',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=0, must-revalidate',
+          },
+          {
+            key: 'Service-Worker-Allowed',
+            value: '/',
+          },
+        ],
+      },
+    ];
+  },
 };
 
 module.exports = withPWA(nextConfig);
