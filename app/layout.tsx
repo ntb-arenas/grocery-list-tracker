@@ -1,6 +1,8 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { AppProviders } from './providers/AppProviders';
+import ServiceWorkerRegistration from './components/ServiceWorkerRegistration';
+import OfflineIndicator from './components/OfflineIndicator';
 
 export const metadata: Metadata = {
   title: {
@@ -50,6 +52,8 @@ export default function RootLayout({
         <link rel='apple-touch-icon' href='/icon-192x192.png' />
       </head>
       <body className='antialiased min-h-[100svh] bg-gradient-to-b from-slate-50 to-slate-100 dark:from-slate-950 dark:to-slate-900'>
+        <OfflineIndicator />
+        <ServiceWorkerRegistration />
         <AppProviders>{children}</AppProviders>
       </body>
     </html>
