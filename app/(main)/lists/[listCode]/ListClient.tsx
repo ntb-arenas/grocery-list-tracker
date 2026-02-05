@@ -8,11 +8,13 @@ import AddItemForm from '@/app/components/AddItemForm';
 import ItemsSection from '@/app/components/ItemsSection';
 import useSelection from '@/lib/hooks/useSelection';
 import { getLocalStorageItem, setLocalStorageItem } from '@/lib/utils/storage';
+import ConfirmationModal from '@/app/components/ConfirmationModal';
 
 export default function ListClient({ listCode }: { listCode: string }) {
   const router = useRouter();
-  const { listItems, addItemToList, toggleItem, markItems, deleteItems } = useGroceryLists(listCode);
+  const { listItems, addItemToList, toggleItem, markItems, deleteItems, deleteList } = useGroceryLists(listCode);
   const [newPersonalItem, setNewPersonalItem] = useState('');
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const {
     selected: selectedItems,
     toggleSelection,
@@ -31,15 +33,32 @@ export default function ListClient({ listCode }: { listCode: string }) {
   const handleMark = async (completed: boolean) => {
     await markItems(selectedPersonalIds, completed);
   };
+
   const handleDeleteSelected = async () => {
     await deleteItems(selectedPersonalIds);
   };
-  const handleDeleteList = () => {
+
+  const handleForgetList = () => {
     // Only remove from localStorage, not from Firebase
     const codes = JSON.parse(getLocalStorageItem('personalListCodes') || '[]');
     const updated = codes.filter((c: string) => c !== listCode);
     setLocalStorageItem('personalListCodes', JSON.stringify(updated));
     router.push('/');
+  };
+
+  const handleDeleteListForEveryone = async () => {
+    try {
+      // Delete from Firebase
+      await deleteList(listCode);
+      // Also remove from localStorage
+      const codes = JSON.parse(getLocalStorageItem('personalListCodes') || '[]');
+      const updated = codes.filter((c: string) => c !== listCode);
+      setLocalStorageItem('personalListCodes', JSON.stringify(updated));
+      router.push('/');
+    } catch (error) {
+      console.error('Failed to delete list:', error);
+      alert('Failed to delete the list. Please try again.');
+    }
   };
 
   const toggleItemCompleted = async (e: React.MouseEvent, combinedId: string, currentStatus: boolean) => {
@@ -125,9 +144,43 @@ export default function ListClient({ listCode }: { listCode: string }) {
             />
           )}
           {listCode && (
-            <div className='mt-[5rem] flex justify-center'>
+            <div className='mt-[5rem] flex flex-col gap-3 items-center'>
               <button
-                onClick={handleDeleteList}
+                onClick={handleForgetList}
+                className='
+                    inline-flex items-center gap-2 px-5 py-2
+                    bg-gradient-to-r from-slate-100 to-slate-200
+                    dark:from-slate-700 dark:to-slate-600
+                    text-slate-700 dark:text-slate-200
+                    rounded-full border border-slate-200 dark:border-slate-600
+                    text-base font-medium
+
+                    shadow
+                    transition-transform transition-shadow duration-150 ease-out
+                    active:scale-95 active:shadow-inner
+
+                    [-webkit-tap-highlight-color:transparent]
+                  '
+              >
+                <svg
+                  className='h-5 w-5 text-slate-500 dark:text-slate-300'
+                  viewBox='0 0 24 24'
+                  fill='none'
+                  stroke='currentColor'
+                  strokeWidth='2'
+                  strokeLinecap='round'
+                  strokeLinejoin='round'
+                  aria-hidden
+                >
+                  <path d='M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4' />
+                  <polyline points='16 17 21 12 16 7' />
+                  <line x1='21' y1='12' x2='9' y2='12' />
+                </svg>
+                <span>Forget list on this device</span>
+              </button>
+
+              <button
+                onClick={() => setShowDeleteModal(true)}
                 className='
                     inline-flex items-center gap-2 px-5 py-2
                     bg-gradient-to-r from-rose-100 to-rose-200
@@ -158,12 +211,25 @@ export default function ListClient({ listCode }: { listCode: string }) {
                   <path d='M10 11v6' />
                   <path d='M14 11v6' />
                 </svg>
-                <span>Delete this list</span>
+                <span>Delete list for everyone</span>
               </button>
             </div>
           )}
         </div>
       )}
+
+      <ConfirmationModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+        onConfirm={handleDeleteListForEveryone}
+        title='Delete list for everyone?'
+        message='This will permanently delete the list and all its items for everyone who has access to it. This action cannot be undone.'
+        confirmText='Delete permanently'
+        cancelText='Cancel'
+        requireCodeConfirmation={true}
+        codeToMatch={listCode}
+        isDangerous={true}
+      />
     </div>
   );
 }
