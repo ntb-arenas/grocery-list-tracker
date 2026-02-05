@@ -2,10 +2,7 @@ const withPWA = require('next-pwa')({
   dest: 'public',
   register: true,
   skipWaiting: true,
-  // Disable only in development, enable in production
   disable: process.env.NODE_ENV === 'development',
-  buildExcludes: [/middleware-manifest\.json$/],
-  // Ensure service worker is generated in public folder
   publicExcludes: ['!sw.js', '!workbox-*.js'],
   runtimeCaching: [
     // Firebase Firestore - Critical for offline grocery lists
@@ -117,6 +114,7 @@ const nextConfig = {
       },
     ];
   },
+  turbopack: {},
 };
 
 module.exports = withPWA(nextConfig);
