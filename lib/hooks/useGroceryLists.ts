@@ -193,6 +193,26 @@ export default function useGroceryLists(initialCode?: string) {
     await updateDoc(getDocRef(combinedId), { completed: !currentStatus });
   }, [getDocRef]);
 
+  // Delete entire list from Firebase
+  const deleteList = useCallback(async (code: string) => {
+    if (!code) return;
+
+    try {
+      // First, delete all items in the list
+      const itemsRef = collection(db, 'lists', code, 'items');
+      const itemsSnapshot = await getDocs(itemsRef);
+      await Promise.all(
+        itemsSnapshot.docs.map((doc) => deleteDoc(doc.ref))
+      );
+
+      // Then delete the list document itself
+      await deleteDoc(doc(db, 'lists', code));
+    } catch (error) {
+      console.error('Error deleting list:', error);
+      throw error;
+    }
+  }, []);
+
   // Get merged and sorted items
   const getCombinedItems = useCallback(() => {
     return [...listItems, ...globalItems].sort((a, b) => {
@@ -217,6 +237,7 @@ export default function useGroceryLists(initialCode?: string) {
     markItems,
     deleteItems,
     toggleItem,
+    deleteList,
     getCombinedItems,
   } as const;
 }
