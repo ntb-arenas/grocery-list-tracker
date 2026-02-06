@@ -12,10 +12,7 @@ export function useShouldShowApp() {
       const isInStandaloneMode = (window.navigator as any).standalone || standalone;
       const hasBypassed = getLocalStorageItem('bypass-install') === 'true';
       setShouldShowApp(isInStandaloneMode || hasBypassed);
-      
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 1500);
+      setIsLoading(false);
     };
 
     checkShouldShow();
