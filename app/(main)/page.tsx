@@ -190,6 +190,10 @@ export default function HomePage() {
           </div>
         ) : getCombinedItems().length === 0 ? (
           <div className='text-center py-16'>
+            {/* Add item form always visible */}
+            <form onSubmit={addGlobal} className='mb-4'>
+              <AddItemForm value={newGlobalItem} onChange={setNewGlobalItem} />
+            </form>
             <p className='text-lg text-slate-400 dark:text-slate-500'>No items yet</p>
             <p className='text-sm text-slate-400 dark:text-slate-600 mt-1'>Add your first item above</p>
           </div>
