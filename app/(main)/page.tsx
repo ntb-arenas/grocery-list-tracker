@@ -7,6 +7,7 @@ import ListCodeBox from '@/app/components/ListCodeBox';
 import ItemsSection from '@/app/components/ItemsSection';
 import useSelection from '@/lib/hooks/useSelection';
 import PersonalListCard from '@/app/components/PersonalListCard';
+import ExportListButton from '@/app/components/ExportListButton';
 import { usePersonalListsFacade } from '@/lib/hooks/usePersonalListsFacade';
 import { usePersonalListsRealTime } from '@/lib/hooks/usePersonalListsRealTime';
 import { useShouldShowApp } from '@/lib/hooks/useShouldShowApp';
@@ -189,6 +190,10 @@ export default function HomePage() {
           </div>
         ) : getCombinedItems().length === 0 ? (
           <div className='text-center py-16'>
+            {/* Add item form always visible */}
+            <form onSubmit={addGlobal} className='mb-4'>
+              <AddItemForm value={newGlobalItem} onChange={setNewGlobalItem} />
+            </form>
             <p className='text-lg text-slate-400 dark:text-slate-500'>No items yet</p>
             <p className='text-sm text-slate-400 dark:text-slate-600 mt-1'>Add your first item above</p>
           </div>
@@ -196,11 +201,9 @@ export default function HomePage() {
           <div className='space-y-6'>
             {/* Global section */}
             <div className='p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-emerald-50/60 to-white/60 dark:from-emerald-950/20 dark:to-transparent shadow-sm'>
-              <div className='flex items-start gap-3 mb-4'>
-                <div>
-                  <h3 className='text-lg font-semibold text-slate-800 dark:text-slate-100'>Global list</h3>
-                  <p className='text-xs text-slate-500 dark:text-slate-400'>Shared list visible to all users.</p>
-                </div>
+              <div className='flex justify-between gap-3 mb-4'>
+                <h3 className='text-lg font-semibold text-slate-800 dark:text-slate-100'>Grocery list</h3>
+                {globalItems.length > 0 && <ExportListButton listId='global-list-export' listName='grocery-list' />}
               </div>
 
               <form onSubmit={addGlobal} className='mb-4'>
