@@ -7,7 +7,6 @@ import ListCodeBox from '@/app/components/ListCodeBox';
 import ItemsSection from '@/app/components/ItemsSection';
 import useSelection from '@/lib/hooks/useSelection';
 import PersonalListCard from '@/app/components/PersonalListCard';
-import ExportListButton from '@/app/components/ExportListButton';
 import { usePersonalListsFacade } from '@/lib/hooks/usePersonalListsFacade';
 import { usePersonalListsRealTime } from '@/lib/hooks/usePersonalListsRealTime';
 import { useShouldShowApp } from '@/lib/hooks/useShouldShowApp';
@@ -203,7 +202,6 @@ export default function HomePage() {
             <div className='p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30 bg-gradient-to-br from-emerald-50/60 to-white/60 dark:from-emerald-950/20 dark:to-transparent shadow-sm'>
               <div className='flex justify-between gap-3 mb-4'>
                 <h3 className='text-lg font-semibold text-slate-800 dark:text-slate-100'>Grocery list</h3>
-                {globalItems.length > 0 && <ExportListButton listId='global-list-export' listName='grocery-list' />}
               </div>
 
               <form onSubmit={addGlobal} className='mb-4'>
