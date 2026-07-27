@@ -1,48 +1,25 @@
 'use client';
 
-import React from 'react';
+import React, { useState } from 'react';
 import { GroceryItem } from '@/lib/hooks/useGroceryLists';
 
 interface Props {
   title?: string;
   items: GroceryItem[];
-  selected: Set<string>;
-  onToggleSelect: (id: string) => void;
   onToggleComplete: (e: React.MouseEvent, id: string, current: boolean) => void;
+  onClearBought?: (ids: string[]) => void;
 }
 
 function ItemRow({
   item,
-  selected,
-  onToggleSelect,
   onToggleComplete,
 }: {
   item: GroceryItem;
-  selected: Set<string>;
-  onToggleSelect: (id: string) => void;
   onToggleComplete: (e: React.MouseEvent, id: string, current: boolean) => void;
 }) {
   return (
     <li className='flex items-stretch gap-2'>
-      <div
-        onClick={() => onToggleSelect(item.id)}
-        className={`flex items-center gap-3 p-2 rounded-2xl cursor-pointer transition-all active:scale-[0.98] border flex-1 ${
-          selected.has(item.id)
-            ? 'bg-indigo-50 dark:bg-indigo-950/30 border-indigo-200 dark:border-indigo-900/50 shadow-sm'
-            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800/80 hover:border-slate-300 dark:hover:border-slate-600'
-        }`}
-      >
-        <div
-          className={`w-6 h-6 rounded-full border-2 flex items-center justify-center transition-all flex-shrink-0 ${
-            selected.has(item.id) ? 'border-indigo-500 bg-indigo-500' : 'border-slate-300 dark:border-slate-600'
-          }`}
-        >
-          {selected.has(item.id) && (
-            <svg className='w-4 h-4 text-white' fill='none' viewBox='0 0 24 24' stroke='currentColor'>
-              <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={3} d='M5 13l4 4L19 7' />
-            </svg>
-          )}
-        </div>
+      <div className='flex items-center gap-3 py-2 pl-4 pr-2 rounded-2xl border flex-1 bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'>
         <span
           className={`flex-1 text-base transition-all ${item.completed ? 'line-through text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-100'}`}
         >
@@ -64,30 +41,64 @@ function ItemRow({
   );
 }
 
-export default function ItemsSection({ title, items, selected, onToggleSelect, onToggleComplete }: Props) {
+export default function ItemsSection({ title, items, onToggleComplete, onClearBought }: Props) {
+  const [isBoughtOpen, setIsBoughtOpen] = useState(false);
   const pendingItems = items.filter((item) => !item.completed);
   const completedItems = items.filter((item) => item.completed);
+
+  const handleClearBought = () => {
+    if (!onClearBought) return;
+    const confirmed = window.confirm(
+      `Remove ${completedItems.length} bought item${completedItems.length === 1 ? '' : 's'}?`
+    );
+    if (confirmed) onClearBought(completedItems.map((item) => item.id));
+  };
 
   return (
     <div>
       <h3 className='text-sm text-slate-500 dark:text-slate-400 mb-2'>{title}</h3>
       <ul className='space-y-2'>
         {pendingItems.map((item) => (
-          <ItemRow key={item.id} item={item} selected={selected} onToggleSelect={onToggleSelect} onToggleComplete={onToggleComplete} />
+          <ItemRow key={item.id} item={item} onToggleComplete={onToggleComplete} />
         ))}
       </ul>
       {completedItems.length > 0 && (
         <div className='mt-4'>
           <div className='flex items-center gap-2 mb-2'>
-            <div className='flex-1 h-px bg-slate-200 dark:bg-slate-700' />
-            <span className='text-xs text-slate-400 dark:text-slate-500'>Bought ({completedItems.length})</span>
-            <div className='flex-1 h-px bg-slate-200 dark:bg-slate-700' />
+            <button
+              onClick={() => setIsBoughtOpen((prev) => !prev)}
+              className='flex items-center gap-2 flex-1 min-w-0'
+            >
+              <div className='flex-1 h-px bg-slate-200 dark:bg-slate-700' />
+              <span className='text-xs text-slate-400 dark:text-slate-500 flex items-center gap-1 flex-shrink-0'>
+                Bought ({completedItems.length})
+                <svg
+                  className={`w-3 h-3 transition-transform ${isBoughtOpen ? 'rotate-180' : ''}`}
+                  fill='none'
+                  viewBox='0 0 24 24'
+                  stroke='currentColor'
+                >
+                  <path strokeLinecap='round' strokeLinejoin='round' strokeWidth={2} d='M19 9l-7 7-7-7' />
+                </svg>
+              </span>
+              <div className='flex-1 h-px bg-slate-200 dark:bg-slate-700' />
+            </button>
+            {onClearBought && (
+              <button
+                onClick={handleClearBought}
+                className='text-xs text-rose-500 hover:text-rose-600 dark:text-rose-400 dark:hover:text-rose-300 font-medium flex-shrink-0 pl-2 border-l border-slate-200 dark:border-slate-700'
+              >
+                Clear
+              </button>
+            )}
           </div>
-          <ul className='space-y-2'>
-            {completedItems.map((item) => (
-              <ItemRow key={item.id} item={item} selected={selected} onToggleSelect={onToggleSelect} onToggleComplete={onToggleComplete} />
-            ))}
-          </ul>
+          {isBoughtOpen && (
+            <ul className='space-y-2'>
+              {completedItems.map((item) => (
+                <ItemRow key={item.id} item={item} onToggleComplete={onToggleComplete} />
+              ))}
+            </ul>
+          )}
         </div>
       )}
     </div>

@@ -5,7 +5,6 @@ import useGroceryLists from '@/lib/hooks/useGroceryLists';
 import AddItemForm from '@/app/components/AddItemForm';
 import ListCodeBox from '@/app/components/ListCodeBox';
 import ItemsSection from '@/app/components/ItemsSection';
-import useSelection from '@/lib/hooks/useSelection';
 import PersonalListCard from '@/app/components/PersonalListCard';
 import { usePersonalListsFacade } from '@/lib/hooks/usePersonalListsFacade';
 import { usePersonalListsRealTime } from '@/lib/hooks/usePersonalListsRealTime';
@@ -20,7 +19,6 @@ export default function HomePage() {
     claimList: claimListFirebase,
     addItemToGlobal,
     toggleItem,
-    markItems,
     deleteItems,
     getCombinedItems,
   } = useGroceryLists();
@@ -29,15 +27,6 @@ export default function HomePage() {
   usePersonalListsRealTime();
 
   const [newGlobalItem, setNewGlobalItem] = useState('');
-  const {
-    selected: selectedItems,
-    toggleSelection,
-    toggleSelectList,
-    selectedIdsFor,
-    hasSelectedIn,
-    selectedHasUnbought,
-    selectedHasBought,
-  } = useSelection();
 
   const [codeInput, setCodeInput] = useState('');
   const [isCodeOpen, setIsCodeOpen] = useState(false);
@@ -55,18 +44,14 @@ export default function HomePage() {
     }
   };
 
-  // Selection logic
-  const toggleSelectGlobal = () => toggleSelectList(globalItems.map((i) => i.id));
-
   const toggleItemCompleted = async (e: React.MouseEvent, combinedId: string, currentStatus: boolean) => {
     e.stopPropagation();
     await toggleItem(combinedId, currentStatus);
   };
 
-  const hasSelectedInGlobal = hasSelectedIn(globalItems);
-  const selectedGlobalIds = selectedIdsFor(globalItems);
-  const selectedGlobalHasUnbought = selectedHasUnbought(globalItems);
-  const selectedGlobalHasBought = selectedHasBought(globalItems);
+  const clearBoughtGlobal = async (ids: string[]) => {
+    await deleteItems(ids);
+  };
 
   useEffect(() => {
     if (isCodeOpen) {
@@ -208,50 +193,8 @@ export default function HomePage() {
                 <AddItemForm value={newGlobalItem} onChange={setNewGlobalItem} />
               </form>
 
-              <div className='flex gap-2 mb-3'>
-                {globalItems.length > 0 && (
-                  <button
-                    onClick={toggleSelectGlobal}
-                    className='text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
-                  >
-                    {selectedGlobalIds.length === globalItems.length ? 'Deselect' : 'Select all'}
-                  </button>
-                )}
-                {hasSelectedInGlobal && (
-                  <>
-                    {selectedGlobalHasUnbought && (
-                      <button
-                        onClick={async () => await markItems(selectedGlobalIds, true)}
-                        className='px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-sm'
-                      >
-                        ✓ Bought
-                      </button>
-                    )}
-                    {selectedGlobalHasBought && (
-                      <button
-                        onClick={async () => await markItems(selectedGlobalIds, false)}
-                        className='px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-sm'
-                      >
-                        ↩ Unbought
-                      </button>
-                    )}
-                    <button
-                      onClick={async () => await deleteItems(selectedGlobalIds)}
-                      className='px-3 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl text-sm'
-                    >
-                      🗑 Delete
-                    </button>
-                  </>
-                )}
-              </div>
-
               {globalItems.length > 0 && (
-                <ItemsSection
-                  items={globalItems}
-                  selected={selectedItems}
-                  onToggleSelect={toggleSelection}
-                  onToggleComplete={toggleItemCompleted}
-                />
+                <ItemsSection items={globalItems} onToggleComplete={toggleItemCompleted} onClearBought={clearBoughtGlobal} />
               )}
             </div>
           </div>

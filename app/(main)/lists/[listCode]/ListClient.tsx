@@ -6,37 +6,14 @@ import { useRouter } from 'next/navigation';
 import useGroceryLists from '@/lib/hooks/useGroceryLists';
 import AddItemForm from '@/app/components/AddItemForm';
 import ItemsSection from '@/app/components/ItemsSection';
-import useSelection from '@/lib/hooks/useSelection';
 import { getLocalStorageItem, setLocalStorageItem } from '@/lib/utils/storage';
 import ConfirmationModal from '@/app/components/ConfirmationModal';
 
 export default function ListClient({ listCode }: { listCode: string }) {
   const router = useRouter();
-  const { listItems, addItemToList, toggleItem, markItems, deleteItems, deleteList } = useGroceryLists(listCode);
+  const { listItems, addItemToList, toggleItem, deleteItems, deleteList } = useGroceryLists(listCode);
   const [newPersonalItem, setNewPersonalItem] = useState('');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const {
-    selected: selectedItems,
-    toggleSelection,
-    toggleSelectList,
-    selectedIdsFor,
-    hasSelectedIn,
-    selectedHasUnbought,
-    selectedHasBought,
-  } = useSelection();
-
-  const selectedPersonalIds = selectedIdsFor(listItems);
-  const hasSelectedInPersonal = hasSelectedIn(listItems);
-  const selectedPersonalHasUnbought = selectedHasUnbought(listItems);
-  const selectedPersonalHasBought = selectedHasBought(listItems);
-
-  const handleMark = async (completed: boolean) => {
-    await markItems(selectedPersonalIds, completed);
-  };
-
-  const handleDeleteSelected = async () => {
-    await deleteItems(selectedPersonalIds);
-  };
 
   const handleForgetList = () => {
     // Only remove from localStorage, not from Firebase
@@ -64,6 +41,10 @@ export default function ListClient({ listCode }: { listCode: string }) {
   const toggleItemCompleted = async (e: React.MouseEvent, combinedId: string, currentStatus: boolean) => {
     e.stopPropagation();
     await toggleItem(combinedId, currentStatus);
+  };
+
+  const clearBoughtPersonal = async (ids: string[]) => {
+    await deleteItems(ids);
   };
 
   return (
@@ -97,50 +78,12 @@ export default function ListClient({ listCode }: { listCode: string }) {
           >
             <AddItemForm value={newPersonalItem} onChange={setNewPersonalItem} />
           </form>
-          <div className='flex gap-2 mb-3'>
-            {listItems.length > 0 && (
-              <button
-                onClick={() => toggleSelectList(listItems.map((i) => i.id))}
-                className='text-sm text-indigo-600 hover:text-indigo-700 dark:text-indigo-400 dark:hover:text-indigo-300 font-medium'
-              >
-                {selectedPersonalIds.length === listItems.length ? 'Deselect' : 'Select all'}
-              </button>
-            )}
-            <div className='text-sm text-slate-400'>{/* placeholder for claiming state */}</div>
-            {hasSelectedInPersonal && (
-              <>
-                {selectedPersonalHasUnbought && (
-                  <button
-                    onClick={() => handleMark(true)}
-                    className='px-3 py-1 bg-emerald-500 hover:bg-emerald-600 text-white rounded-2xl text-sm'
-                  >
-                    ✓ Bought
-                  </button>
-                )}
-                {selectedPersonalHasBought && (
-                  <button
-                    onClick={() => handleMark(false)}
-                    className='px-3 py-1 bg-amber-500 hover:bg-amber-600 text-white rounded-2xl text-sm'
-                  >
-                    ↩ Unbought
-                  </button>
-                )}
-                <button
-                  onClick={handleDeleteSelected}
-                  className='px-3 py-1 bg-rose-500 hover:bg-rose-600 text-white rounded-2xl text-sm'
-                >
-                  🗑 Delete
-                </button>
-              </>
-            )}
-          </div>
           {listItems.length > 0 && (
             <ItemsSection
               title={`Personal list (${listCode})`}
               items={listItems}
-              selected={selectedItems}
-              onToggleSelect={toggleSelection}
               onToggleComplete={toggleItemCompleted}
+              onClearBought={clearBoughtPersonal}
             />
           )}
           {listCode && (
