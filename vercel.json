@@ -4,7 +4,6 @@
   "installCommand": "npm install",
   "framework": "nextjs",
   "outputDirectory": ".next",
-  "public": true,
   "headers": [
     {
       "source": "/sw.js",
